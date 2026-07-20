@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Přihořívá">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="theme-color" content="#4d84ff">
+  <title>Přihořívá</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="icon-180.png">
+  <link rel="icon" type="image/png" href="icon-192.png">
+</head>
+<body>
+
+  <!-- seamless mode-cue backdrop: speech bubbles = clue, question marks = guess, flames = reveal.
+       one motif drawn once, tiled twice per tile at fixed angles; colored per state via --pattern-ink -->
+  <svg class="bg-layer" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <g id="m-speech">
+        <path d="M20 11 C40 6 61 6 79 9 C88 10 91 18 90 27 C92 37 91 44 88 51 C87 58 81 61 75 61 C66 61 58 61 50 61 C48 73 42 82 33 90 C31 78 29 68 27 60 C21 61 15 60 11 54 C9 45 10 34 10 26 C10 18 13 13 20 11 Z"></path>
+      </g>
+      <g id="m-q">
+        <path d="M28 12 H70 V28 H28 Z M54 12 H72 V46 H54 Z M40 38 H72 V54 H40 Z M42 50 H58 V72 H42 Z M42 82 H58 V100 H42 Z"></path>
+      </g>
+      <g id="m-fire">
+        <path d="M50 4 C 60 26, 56 34, 62 42 C 70 36, 70 30, 69 26 C 82 44, 80 68, 62 80 C 54 86, 46 86, 38 80 C 22 68, 24 48, 36 40 C 40 48, 46 44, 47 36 C 49 24, 46 14, 50 4 Z"></path>
+      </g>
+      <pattern id="pat-speech" patternUnits="userSpaceOnUse" width="180" height="180">
+        <g fill="var(--pattern-ink, transparent)">
+          <use href="#m-speech" transform="translate(14 16) rotate(-14) scale(0.74)"></use>
+          <use href="#m-speech" transform="translate(100 92) rotate(12) scale(0.74)"></use>
+        </g>
+      </pattern>
+      <pattern id="pat-q" patternUnits="userSpaceOnUse" width="180" height="180">
+        <g fill="var(--pattern-ink, transparent)">
+          <use href="#m-q" transform="translate(14 16) rotate(-14) scale(0.74)"></use>
+          <use href="#m-q" transform="translate(100 92) rotate(12) scale(0.74)"></use>
+        </g>
+      </pattern>
+      <pattern id="pat-fire" patternUnits="userSpaceOnUse" width="180" height="180">
+        <g fill="var(--pattern-ink, transparent)">
+          <use href="#m-fire" transform="translate(14 16) rotate(-14) scale(0.74)"></use>
+          <use href="#m-fire" transform="translate(100 92) rotate(12) scale(0.74)"></use>
+        </g>
+      </pattern>
+    </defs>
+    <rect class="bg-fill" width="100%" height="100%"></rect>
+  </svg>
+
+  <main class="game" id="game">
+
+    <header class="topbar">
+      <div class="state-label" id="stateHint"></div>
+      <div class="scoreboard">
+        <div class="team-chip blue" id="chipBlue"><span id="scoreBlue">0</span></div>
+        <div class="team-chip green" id="chipGreen"><span id="scoreGreen">0</span></div>
+      </div>
+    </header>
+
+    <section class="dial-wrap">
+      <svg id="dial" viewBox="0 0 400 216" xmlns="http://www.w3.org/2000/svg" aria-label="Ciferník">
+        <!-- dial face -->
+        <path class="dial-face" d="M 10 200 A 190 190 0 0 1 390 200 Z"></path>
+        <g id="ticks"></g>
+
+        <!-- target wedge (5 bands: 2,3,5,3,2) -->
+        <g id="wedge" class="wedge"></g>
+
+        <!-- needle -->
+        <g id="needleGroup" class="needle-group">
+          <line class="needle" x1="200" y1="200" x2="200" y2="30"></line>
+          <circle class="needle-tip" cx="200" cy="30" r="9"></circle>
+        </g>
+        <circle class="hub" cx="200" cy="200" r="14"></circle>
+
+        <!-- baseline -->
+        <line class="baseline" x1="4" y1="200" x2="396" y2="200"></line>
+      </svg>
+
+      <div class="prompt-card" id="promptCard">
+        <div class="prompt-side">
+          <svg class="prompt-arrow" viewBox="0 0 56 18" aria-hidden="true"><path d="M53 11 C 40 5, 26 13, 10 8 M18 2 L8 8 L17 15"/></svg>
+          <div class="prompt-text" id="labelLeft"></div>
+        </div>
+        <div class="prompt-side">
+          <svg class="prompt-arrow" viewBox="0 0 56 18" aria-hidden="true"><path d="M3 11 C 16 5, 30 13, 46 8 M38 2 L48 8 L39 15"/></svg>
+          <div class="prompt-text" id="labelRight"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="round-info">
+      <div class="score-chip" id="scoreChip" hidden></div>
+    </section>
+
+    <footer class="actions">
+      <button class="btn primary" id="primaryBtn"></button>
+      <button class="btn ghost" id="secondaryBtn" hidden></button>
+    </footer>
+
+  </main>
+
+  <!-- pass-the-phone gate -->
+  <div class="pass-overlay" id="passOverlay" hidden>
+    <div class="pass-inner">
+      <h2 id="passTitle">Předej<br>telefon</h2>
+      <button class="btn light" id="passBtn">Hádám</button>
+    </div>
+  </div>
+
+  <!-- skip-card confirm -->
+  <div class="pass-overlay" id="skipOverlay" hidden>
+    <div class="pass-inner">
+      <h2>Přeskočit?</h2>
+      <div class="overlay-btns">
+        <button class="btn light" id="skipYes">Přeskočit!</button>
+        <button class="link-btn" id="skipNo">Zrušit</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- KONFIG: hidden config screen (triple-tap the state tag to open) -->
+  <div class="konfig-overlay" id="konfigOverlay" hidden>
+    <div class="konfig-panel">
+      <header class="konfig-head">
+        <h2>KONFIG</h2>
+        <button class="btn ghost" id="konfigClose">Hotovo</button>
+      </header>
+
+      <section class="konfig-sec">
+        <h3>Jazyk karet</h3>
+        <div class="seg">
+          <button class="seg-btn" id="langCs">Česky</button>
+          <button class="seg-btn" id="langEn">English</button>
+        </div>
+      </section>
+
+      <section class="konfig-sec">
+        <h3>Přidat kartu</h3>
+        <p class="konfig-hint">Levý konec = záporný pól (−), pravý = kladný (+).</p>
+        <div class="field-lang"><span id="addPrimaryName">Česky</span></div>
+        <div class="add-row">
+          <input class="konfig-input" id="addLeft" placeholder="Levý konec (−)" maxlength="40" autocomplete="off">
+          <input class="konfig-input" id="addRight" placeholder="Pravý konec (+)" maxlength="40" autocomplete="off">
+        </div>
+        <div class="field-lang"><span id="addOtherName">English</span> <em>(nepovinné)</em></div>
+        <div class="add-row">
+          <input class="konfig-input" id="addLeft2" placeholder="Levý konec (−)" maxlength="40" autocomplete="off">
+          <input class="konfig-input" id="addRight2" placeholder="Pravý konec (+)" maxlength="40" autocomplete="off">
+        </div>
+        <p class="add-error" id="addError" hidden></p>
+        <button class="btn" id="addBtn">Přidat kartu</button>
+      </section>
+
+      <section class="konfig-sec">
+        <h3>Moje karty (<span id="userCount">0</span>)</h3>
+        <ul class="user-list" id="userList"></ul>
+      </section>
+
+      <section class="konfig-sec">
+        <h3>Skóre</h3>
+        <button class="btn danger" id="wipeBtn">Vymazat skóre</button>
+        <div class="wipe-confirm" id="wipeConfirm" hidden>
+          <span>Opravdu vymazat skóre obou týmů?</span>
+          <div class="wipe-btns">
+            <button class="btn danger" id="wipeYes">Ano, vymazat</button>
+            <button class="btn" id="wipeNo">Zrušit</button>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <script src="prompts.js"></script>
+  <script src="app.js"></script>
+  <script>
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
+    }
+  </script>
+</body>
+</html>

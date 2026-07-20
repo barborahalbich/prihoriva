@@ -1,0 +1,500 @@
+:root {
+  --ink: #111111;
+  --paper: #ffffff;
+  --red: #e02b1f;
+  --orange: #f07300;
+  --yellow: #ffde00;
+  --blue-light: #4d84ff;
+  --blue-deep: #0f22a8;
+  --green-light: #2fd575;
+  --green-deep: #006b34;
+  --dark: #161616;
+  --miss: #b0b0b0;
+  --shadow: 5px 5px 0 var(--ink);
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  height: 100%;
+  overscroll-behavior: none;
+}
+
+body {
+  background: var(--blue-light);
+  --screen-bg: var(--blue-light);
+  --screen-ink: #111111;
+  color: var(--screen-ink);
+  font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  transition: background 0.25s ease;
+}
+
+/* per-team, per-state screen fills */
+/* dark motifs on the light team color for BOTH clue + guess — one consistent contrast */
+body.team-blue.state-psychic  { --screen-bg: var(--blue-light);  --screen-ink: #111111; --pattern-ink: var(--blue-deep); }
+body.team-blue.state-guess    { --screen-bg: var(--blue-light);  --screen-ink: #111111; --pattern-ink: var(--blue-deep); }
+body.team-green.state-psychic { --screen-bg: var(--green-light); --screen-ink: #111111; --pattern-ink: var(--green-deep); }
+body.team-green.state-guess   { --screen-bg: var(--green-light); --screen-ink: #111111; --pattern-ink: var(--green-deep); }
+body.state-reveal.r5 { --screen-bg: var(--red);    --screen-ink: #ffffff; --pattern-ink: #a81810; }
+body.state-reveal.r3 { --screen-bg: var(--orange); --screen-ink: #111111; --pattern-ink: #b85600; }
+body.state-reveal.r2 { --screen-bg: var(--yellow); --screen-ink: #111111; --pattern-ink: #d9b400; }
+body.state-reveal.r0 { --screen-bg: var(--miss);   --screen-ink: #111111; --pattern-ink: #8f8f8f; }
+body { background: var(--screen-bg); }
+
+/* ---------- seamless mode-cue backdrop ---------- */
+.bg-layer {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -1;              /* behind the game, above the solid body fill */
+  pointer-events: none;
+}
+.bg-fill { fill: transparent; }
+body.state-psychic .bg-fill { fill: url(#pat-speech); }
+body.state-guess   .bg-fill { fill: url(#pat-q); }
+body.state-reveal  .bg-fill { fill: url(#pat-fire); }
+
+.game {
+  height: 100dvh;
+  max-width: 480px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  padding: max(12px, env(safe-area-inset-top)) 16px max(16px, env(safe-area-inset-bottom));
+}
+
+/* ---------- top bar ---------- */
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 4px 0 0;
+}
+
+/* state label: a tilted black tag with white letters (the role you're in) */
+.state-label {
+  background: var(--ink);
+  color: var(--paper);
+  font-size: 25px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  padding: 7px 15px 8px;
+  white-space: nowrap;
+  transform: rotate(-4deg);
+}
+
+/* scorebug: two team-colored chips, the lifted one is the active team */
+.scoreboard {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding-top: 2px;
+}
+
+.team-chip {
+  width: 64px;               /* fixed so both chips always match, even at 2–3 digits */
+  height: 48px;
+  display: grid;
+  place-items: center;
+  border: 3px solid var(--ink);
+  color: var(--paper);
+  font-size: 24px;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+/* scorebug chips: always deep blue / deep green with white numerals */
+.team-chip.blue { background: var(--blue-deep); }
+.team-chip.green { background: var(--green-deep); }
+
+.team-chip.active {
+  box-shadow: 5px 5px 0 var(--ink);
+  transform: translate(-2px, -2px);
+}
+
+/* ---------- dial ---------- */
+.dial-wrap {
+  margin-top: auto;
+  padding-top: 16px;
+}
+
+#dial {
+  display: block;
+  width: calc(100% + 16px);
+  margin: 0 -8px;
+  touch-action: none;
+}
+
+.dial-face {
+  fill: var(--paper);
+  stroke: var(--ink);
+  stroke-width: 5;
+}
+
+.tick { stroke: var(--ink); stroke-width: 2; stroke-linecap: square; opacity: 0.35; }
+.tick.major { stroke-width: 3; opacity: 1; }
+
+.baseline {
+  stroke: var(--ink);
+  stroke-width: 6;
+  stroke-linecap: square;
+}
+
+/* fire ladder: 2 = yellow, 3 = orange, 5 = red; zones have no outlines */
+.wedge path { stroke: none; }
+.wedge .band-2 { fill: var(--yellow); }
+.wedge .band-3 { fill: var(--orange); }
+.wedge .band-5 { fill: var(--red); }
+
+.wedge .band-label {
+  fill: #fff;
+  font-size: 14px;
+  font-weight: 900;
+  text-anchor: middle;
+  paint-order: stroke;
+  stroke: var(--ink);
+  stroke-width: 3px;
+  pointer-events: none;
+  visibility: hidden;
+}
+
+/* zone points show only at the reveal */
+body.state-reveal .wedge .band-label { visibility: visible; }
+
+.wedge {
+  transform-origin: 200px 200px;
+  transition: opacity 0.35s ease, transform 0.45s cubic-bezier(0.2, 1.4, 0.4, 1);
+}
+
+.wedge.hidden-wedge {
+  opacity: 0;
+  transform: scale(0.6);
+  transition: none;
+}
+
+.needle-group {
+  transform-origin: 200px 200px;
+  transition: transform 0.08s linear;
+}
+
+.needle {
+  stroke: var(--ink);
+  stroke-width: 7;
+  stroke-linecap: square;
+}
+
+.needle-tip {
+  fill: var(--red);
+  stroke: var(--ink);
+  stroke-width: 3.5;
+}
+
+.hub { fill: var(--ink); }
+
+/* clue-giving: no needle at all */
+.dial-disabled .needle-group { display: none; }
+
+/* ---------- prompt card: two separate half-cards with a screen-colored gap ---------- */
+.prompt-card {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  column-gap: 12px;
+  width: calc(100% + 16px);
+  margin: 14px -8px 0;
+}
+
+.prompt-side {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  justify-items: center;
+  gap: 20px;
+  padding: 34px 14px 36px;
+  background: var(--ink);
+}
+
+.prompt-arrow {
+  width: 56px;
+  height: 19px;
+  fill: none;
+  stroke: var(--paper);
+  stroke-width: 4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.prompt-side:first-child .prompt-arrow { transform: rotate(-4deg); }
+.prompt-side:last-child .prompt-arrow { transform: rotate(4deg); }
+
+.prompt-text {
+  align-self: center;
+  text-align: center;
+  color: var(--paper);
+  font-size: 16px;
+  font-weight: 900;
+  line-height: 1.25;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+/* ---------- round info ---------- */
+.round-info {
+  min-height: 84px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  margin: 12px 0 auto;
+}
+
+.score-chip {
+  font-size: min(7.4vw, 36px);
+  font-weight: 900;
+  text-transform: uppercase;
+  white-space: nowrap;
+  background: var(--ink);
+  color: var(--yellow);
+  padding: 10px 12px;
+  transform: rotate(-2deg);
+  animation: pop 0.5s cubic-bezier(0.2, 1.6, 0.4, 1);
+}
+
+.score-chip.zero {
+  color: var(--paper);
+}
+
+@keyframes pop {
+  0% { transform: scale(0.4) rotate(-2deg); opacity: 0; }
+  100% { transform: scale(1) rotate(-2deg); opacity: 1; }
+}
+
+/* ---------- buttons ---------- */
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-bottom: 6px;
+}
+
+.btn {
+  appearance: none;
+  border: 3px solid var(--ink);
+  border-radius: 0;
+  padding: 16px 24px;
+  font-size: 18px;
+  font-weight: 900;
+  font-family: inherit;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  cursor: pointer;
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow: var(--shadow);
+  transition: transform 0.08s ease, box-shadow 0.08s ease;
+}
+
+.btn:active {
+  transform: translate(4px, 4px);
+  box-shadow: 1px 1px 0 var(--ink);
+}
+
+.btn.ghost {
+  box-shadow: 3px 3px 0 var(--ink);
+  padding: 10px 16px;
+  font-size: 15px;
+}
+
+/* ---------- pass overlay ---------- */
+.pass-overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--dark);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  z-index: 10;
+}
+
+.pass-overlay[hidden] { display: none; }
+
+.pass-inner { padding: 24px; max-width: 480px; }
+
+.pass-inner h2 {
+  margin: 0 0 36px;
+  font-size: 58px;
+  line-height: 0.95;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: -0.02em;
+  color: var(--paper);
+  text-shadow: 5px 5px 0 var(--red);
+}
+
+.pass-overlay .btn {
+  box-shadow: 5px 5px 0 var(--red);
+}
+
+.pass-overlay .btn:active {
+  box-shadow: 1px 1px 0 var(--red);
+}
+
+.overlay-btns {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  align-items: center;
+}
+
+#skipOverlay h2 { margin-bottom: 52px; }
+
+.link-btn {
+  appearance: none;
+  background: none;
+  border: none;
+  padding: 4px;
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--paper);
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 4px;
+  cursor: pointer;
+}
+
+/* ---------- KONFIG (hidden config screen) ---------- */
+.konfig-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  background: var(--dark);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: max(16px, env(safe-area-inset-top)) 16px max(28px, env(safe-area-inset-bottom));
+}
+.konfig-overlay[hidden] { display: none; }
+
+.konfig-panel {
+  max-width: 480px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.konfig-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 4px;
+}
+.konfig-head h2 {
+  margin: 0;
+  font-size: 40px;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  color: var(--paper);
+  text-shadow: 4px 4px 0 var(--red);
+}
+
+.konfig-sec {
+  background: var(--paper);
+  border: 3px solid var(--ink);
+  box-shadow: var(--shadow);
+  padding: 16px;
+}
+.konfig-sec h3 {
+  margin: 0 0 12px;
+  font-size: 15px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.konfig-sec > .btn { width: 100%; }
+.konfig-hint { margin: -6px 0 12px; font-size: 12px; font-weight: 700; opacity: 0.6; }
+
+/* language segmented control */
+.seg { display: flex; gap: 10px; }
+.seg-btn {
+  flex: 1;
+  appearance: none;
+  border: 3px solid var(--ink);
+  border-radius: 0;
+  background: var(--paper);
+  padding: 12px;
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 900;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.seg-btn.active { background: var(--ink); color: var(--paper); }
+
+/* add-card form */
+.field-lang { font-size: 12px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.03em; margin: 6px 0; }
+.field-lang em { font-style: normal; opacity: 0.55; }
+
+.add-row { display: flex; gap: 10px; margin-bottom: 8px; }
+.konfig-input {
+  flex: 1;
+  min-width: 0;
+  border: 3px solid var(--ink);
+  border-radius: 0;
+  padding: 12px;
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 700;
+  background: var(--paper);
+  color: var(--ink);
+}
+.konfig-input:focus { outline: 3px solid var(--blue-light); outline-offset: 2px; }
+
+.add-error { margin: 4px 0 10px; color: var(--red); font-weight: 900; font-size: 13px; }
+
+/* my cards list */
+.user-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.user-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  border: 3px solid var(--ink);
+  padding: 10px 12px;
+  font-weight: 800;
+  font-size: 14px;
+}
+.user-empty { font-weight: 700; opacity: 0.5; font-size: 14px; }
+.user-del {
+  flex: none;
+  appearance: none;
+  border: 3px solid var(--ink);
+  background: var(--red);
+  color: var(--paper);
+  width: 34px;
+  height: 34px;
+  font-size: 18px;
+  font-weight: 900;
+  line-height: 1;
+  cursor: pointer;
+}
+
+/* danger + wipe confirm */
+.btn.danger { background: var(--red); color: var(--paper); }
+.wipe-confirm { margin-top: 12px; display: flex; flex-direction: column; gap: 10px; font-weight: 800; }
+.wipe-confirm[hidden] { display: none; }
+.wipe-btns { display: flex; gap: 10px; }
+.wipe-btns .btn { flex: 1; }
