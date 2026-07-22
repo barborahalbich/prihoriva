@@ -50,10 +50,12 @@ body { background: var(--screen-bg); }
 /* ---------- seamless mode-cue backdrop ---------- */
 .bg-layer {
   position: fixed;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  z-index: -1;              /* behind the game, above the solid body fill */
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  height: 100lvh;          /* cover the full screen even where iOS mis-sizes % heights */
+  z-index: -1;             /* behind the game, above the solid body fill */
   pointer-events: none;
 }
 .bg-fill { fill: transparent; }
@@ -61,8 +63,11 @@ body.state-psychic .bg-fill { fill: url(#pat-speech); }
 body.state-guess   .bg-fill { fill: url(#pat-q); }
 body.state-reveal  .bg-fill { fill: url(#pat-fire); }
 
+/* anchored to top AND bottom edges so there's never a gap the body color peeks through
+   (iOS standalone mis-sizes height units; fixed inset:0 is bulletproof) */
 .game {
-  height: var(--app-height, 100svh);
+  position: fixed;
+  inset: 0;
   max-width: 480px;
   margin: 0 auto;
   display: flex;
@@ -225,13 +230,21 @@ body.state-reveal .wedge .band-label { visibility: visible; }
   margin: 14px -8px 0;
 }
 
+/* clue cards read as tappable buttons: black, white keyline + white hard shadow */
 .prompt-side {
   display: grid;
   grid-template-rows: auto 1fr;
   justify-items: center;
-  gap: 20px;
-  padding: 34px 14px 36px;
+  gap: 16px;
+  padding: 22px 12px 24px;
   background: var(--ink);
+  border: 3px solid var(--paper);
+  box-shadow: 6px 6px 0 var(--paper);
+  transition: transform 0.08s ease, box-shadow 0.08s ease;
+}
+.prompt-card:active .prompt-side {
+  transform: translate(3px, 3px);
+  box-shadow: 3px 3px 0 var(--paper);
 }
 
 .prompt-arrow {

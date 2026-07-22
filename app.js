@@ -85,6 +85,10 @@ const secondaryBtn = document.getElementById("secondaryBtn");
 const passOverlay = document.getElementById("passOverlay");
 const passTitle = document.getElementById("passTitle");
 const passBtn = document.getElementById("passBtn");
+const passBack = document.getElementById("passBack");
+const peekOverlay = document.getElementById("peekOverlay");
+const peekYes = document.getElementById("peekYes");
+const peekNo = document.getElementById("peekNo");
 const skipOverlay = document.getElementById("skipOverlay");
 const skipYes = document.getElementById("skipYes");
 const skipNo = document.getElementById("skipNo");
@@ -102,9 +106,6 @@ const konfigOverlay = document.getElementById("konfigOverlay");
 const konfigClose = document.getElementById("konfigClose");
 const langBtns = { cs: document.getElementById("langCs"), en: document.getElementById("langEn") };
 const wipeBtn = document.getElementById("wipeBtn");
-const wipeConfirm = document.getElementById("wipeConfirm");
-const wipeYes = document.getElementById("wipeYes");
-const wipeNo = document.getElementById("wipeNo");
 const addLeft = document.getElementById("addLeft");
 const addRight = document.getElementById("addRight");
 const addLeft2 = document.getElementById("addLeft2");
@@ -197,10 +198,43 @@ function scoreFor(needleT, targetT) {
   return 0;
 }
 
-// hot/cold ladder: miss → bullseye
-const SCORE_NAMES = { 0: "Zima", 2: "Přihořívá", 3: "Teplo", 5: "Hoří" };
+// ---------- localization (UI + the hot/cold ladder) ----------
+const UI = {
+  cs: {
+    done: "Hotovo", language: "Jazyk", addTopic: "Přidat téma", optional: "(nepovinné)",
+    phLeft: "Levá (−)", phRight: "Pravá (+)", myTopics: "Moje témata",
+    noTopics: "Zatím žádná vlastní témata.", score: "Skóre", resetScore: "Vynulovat skóre",
+    back: "Zpět k zadání",
+    peekTitle: "Ukázat<br>zadání?", peekYes: "Ano, ukázat",
+    skipTitle: "Přeskočit?", skipYes: "Ano, přeskočit",
+    resetTitle: "Vynulovat<br>skóre?", resetYes: "Ano, vynulovat", cancel: "Zrušit",
+    role_psychic: "Napovídáš", role_guess: "Hádáš", role_reveal: "Odhalení",
+    btn_hide: "Skrýt a předat", btn_reveal: "Odhalit", btn_continue: "Pokračovat",
+    pass_phone: "Předej<br>telefon", pass_cover: "Zakryj<br>displej",
+    btn_guess: "Hádat", btn_clue: "Napovídat",
+    band_0: "Zima", band_2: "Přihořívá", band_3: "Teplo", band_5: "Hoří",
+    errEnds: "Vyplň oba konce.", errOther: "Druhý jazyk: vyplň oba konce, nebo žádný.",
+  },
+  en: {
+    done: "Done", language: "Language", addTopic: "Add topic", optional: "(optional)",
+    phLeft: "Left (−)", phRight: "Right (+)", myTopics: "My topics",
+    noTopics: "No topics yet.", score: "Score", resetScore: "Reset score",
+    back: "Back to the target",
+    peekTitle: "Show the<br>target?", peekYes: "Yes, show it",
+    skipTitle: "Skip?", skipYes: "Yes, skip",
+    resetTitle: "Reset<br>score?", resetYes: "Yes, reset", cancel: "Cancel",
+    role_psychic: "Clue", role_guess: "Guess", role_reveal: "Reveal",
+    btn_hide: "Hide & pass", btn_reveal: "Reveal", btn_continue: "Continue",
+    pass_phone: "Pass the<br>phone", pass_cover: "Cover the<br>screen",
+    btn_guess: "Guess", btn_clue: "Give a clue",
+    band_0: "Cold", band_2: "Warmer", band_3: "Hot", band_5: "On fire",
+    errEnds: "Fill in both ends.", errOther: "Other language: fill in both ends, or neither.",
+  },
+};
+function t(key) { return (UI[lang] && UI[lang][key]) || UI.cs[key] || key; }
 
 function pointsWord(n) {
+  if (lang === "en") return n === 1 ? "point" : "points";
   if (n === 1) return "bod";
   if (n >= 2 && n <= 4) return "body";
   return "bodů";
@@ -258,12 +292,13 @@ function restore() {
 function showPass(mode) {
   passMode = mode;
   if (mode === "guess") {
-    passTitle.innerHTML = "Předej<br>telefon";
-    passBtn.textContent = "Hádám";
+    passTitle.innerHTML = t("pass_phone");
+    passBtn.textContent = t("btn_guess");
   } else {
-    passTitle.innerHTML = "Předej<br>druhému<br>týmu";
-    passBtn.textContent = "Napovídám";
+    passTitle.innerHTML = t("pass_cover");
+    passBtn.textContent = t("btn_clue");
   }
+  passBack.hidden = mode !== "guess";   // "peek back at the target" only when handing to guessers
   passOverlay.hidden = false;
   save();
 }
@@ -291,20 +326,21 @@ function setState(next) {
 
   if (state === "psychic") {
     document.body.className = `team-${currentTeam} state-psychic`;
-    stateHint.textContent = "Napovídáš";
-    primaryBtn.textContent = "Skrýt a předat";
+    stateHint.textContent = t("role_psychic");
+    primaryBtn.textContent = t("btn_hide");
   } else if (state === "guess") {
     document.body.className = `team-${currentTeam} state-guess`;
-    stateHint.textContent = "Hádáš";
-    primaryBtn.textContent = "Odhalit";
+    stateHint.textContent = t("role_guess");
+    primaryBtn.textContent = t("btn_reveal");
   } else if (state === "reveal") {
     document.body.className = `team-${currentTeam} state-reveal r${lastPts}`;
-    stateHint.textContent = "Odhalení";
+    stateHint.textContent = t("role_reveal");
+    const band = t(`band_${lastPts}`);
     scoreChip.textContent = lastPts === 0
-      ? `${SCORE_NAMES[0]}! 0 bodů`
-      : `${SCORE_NAMES[lastPts]}! +${lastPts} ${pointsWord(lastPts)}`;
+      ? `${band}! 0 ${pointsWord(0)}`
+      : `${band}! +${lastPts} ${pointsWord(lastPts)}`;
     scoreChip.classList.toggle("zero", lastPts === 0);
-    primaryBtn.textContent = "Další";
+    primaryBtn.textContent = t("btn_continue");
   }
   updateScoreboard();
   save();
@@ -318,7 +354,7 @@ primaryBtn.addEventListener("click", () => {
     scores[currentTeam] += lastPts;
     setState("reveal");
   } else if (state === "reveal") {
-    // hand the phone to the other team; new round waits under the overlay
+    // set up the next round, then cover the screen so the next clue-giver can look privately
     currentTeam = otherTeam();
     newRound();
     showPass("team");
@@ -331,9 +367,20 @@ passBtn.addEventListener("click", () => {
   else save();
 });
 
-// skip: tapping the prompt card on the clue-giving screen asks to skip the card
+// "back to the target" — the clue-giver forgot where it was; show the clue screen again
+function backToClue() {
+  passOverlay.hidden = true;
+  peekOverlay.hidden = true;
+  setState("psychic");
+}
+passBack.addEventListener("click", backToClue);
+peekYes.addEventListener("click", backToClue);
+peekNo.addEventListener("click", () => { peekOverlay.hidden = true; });
+
+// tapping the prompt card: clue screen → skip; guessing screen → peek back at the target
 document.getElementById("promptCard").addEventListener("click", () => {
   if (state === "psychic") skipOverlay.hidden = false;
+  else if (state === "guess") peekOverlay.hidden = false;
 });
 
 skipYes.addEventListener("click", () => {
@@ -372,7 +419,6 @@ function openKonfig() {
   syncLangUI();
   renderUserList();
   resetAddForm();
-  wipeConfirm.hidden = true;
   konfigOverlay.hidden = false;
 }
 function closeKonfig() {
@@ -394,21 +440,27 @@ function setLang(next) {
   lang = next;
   saveSettings();
   if (!current || !isPair(current[lang])) drawPrompt();   // keep the card if it exists in the new language
-  renderPrompt();
+  applyLang();
+}
+
+// re-render every string in the current language (static + dynamic)
+function applyLang() {
+  document.documentElement.lang = lang;
+  document.querySelectorAll("[data-i18n]").forEach((el) => { el.textContent = t(el.dataset.i18n); });
+  document.querySelectorAll("[data-i18n-html]").forEach((el) => { el.innerHTML = t(el.dataset.i18nHtml); });
+  document.querySelectorAll("[data-i18n-ph]").forEach((el) => { el.placeholder = t(el.dataset.i18nPh); });
   syncLangUI();
-  save();
+  renderPrompt();
+  renderUserList();
+  setState(state);   // role tag, primary button, score chip
 }
 langBtns.cs.addEventListener("click", () => setLang("cs"));
 langBtns.en.addEventListener("click", () => setLang("en"));
 
-// wipe scores (with an inline confirm)
-wipeBtn.addEventListener("click", () => { wipeConfirm.hidden = false; });
-wipeNo.addEventListener("click", () => { wipeConfirm.hidden = true; });
-wipeYes.addEventListener("click", () => {
-  scores.blue = 0; scores.green = 0;
-  updateScoreboard();
-  wipeConfirm.hidden = true;
-  save();
+// wipe scores: reuse the same "Vynulovat skóre?" screen as the scorebug, then drop back to play
+wipeBtn.addEventListener("click", () => {
+  closeKonfig();
+  resetOverlay.hidden = false;
 });
 
 // add a card
@@ -422,9 +474,9 @@ function showAddError(msg) { addError.textContent = msg; addError.hidden = false
 addBtn.addEventListener("click", () => {
   const l = addLeft.value.trim(), r = addRight.value.trim();
   const l2 = addLeft2.value.trim(), r2 = addRight2.value.trim();
-  if (!l || !r) { showAddError("Vyplň oba konce."); return; }
+  if (!l || !r) { showAddError(t("errEnds")); return; }
   const otherStarted = l2 || r2;
-  if (otherStarted && (!l2 || !r2)) { showAddError("Druhý jazyk: vyplň oba konce, nebo žádný."); return; }
+  if (otherStarted && (!l2 || !r2)) { showAddError(t("errOther")); return; }
   const other = lang === "cs" ? "en" : "cs";
   const card = { id: "u" + Date.now().toString(36) + Math.random().toString(36).slice(2, 5) };
   card[lang] = [l, r];
@@ -442,7 +494,7 @@ function escapeHtml(s) {
 function renderUserList() {
   userCount.textContent = String(userPrompts.length);
   if (userPrompts.length === 0) {
-    userList.innerHTML = '<li class="user-empty">Zatím žádná vlastní témata.</li>';
+    userList.innerHTML = `<li class="user-empty">${t("noTopics")}</li>`;
     return;
   }
   userList.innerHTML = userPrompts.map((p) => {
@@ -461,17 +513,9 @@ userList.addEventListener("click", (e) => {
   renderUserList();
 });
 
-// keep the app exactly one screen tall (iOS standalone miscomputes 100dvh until
-// a reflow — the mystery "colored strip" at the bottom; innerHeight is reliable)
-function setAppHeight() {
-  document.documentElement.style.setProperty("--app-height", window.innerHeight + "px");
-}
-setAppHeight();
-window.addEventListener("resize", setAppHeight);
-window.addEventListener("orientationchange", setAppHeight);
-
 // ---------- boot ----------
 loadSettings();
 loadUserPrompts();
 drawTicks();
 if (!restore()) newRound();
+applyLang();
