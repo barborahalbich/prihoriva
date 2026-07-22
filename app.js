@@ -19,14 +19,17 @@ function slicePath(t1, t2, r = R) {
 
 // ---------- prompt engine ----------
 const SETTINGS_KEY = "prihoriva.settings.v1";
-const USER_KEY = "prihoriva.userPrompts.v1";
+const TOPICS_KEY = "prihoriva.topics.v1";
+const DELSEED_KEY = "prihoriva.deletedSeeds.v1";
 
 let lang = "cs";                 // active language: "cs" | "en"
-let userPrompts = [];            // family-added cards: [{ id, cs?, en? }]
-let current = null;              // the card in play
-let usedIds = new Set();         // cards drawn this cycle (no-repeat until the pool empties)
+let topics = [];                 // every topic, on-device & editable: [{ id, cs?, en?, cat }]
+let deletedSeeds = [];           // seed ids the player removed (so they don't return on merge)
+let current = null;              // the topic in play
+let usedIds = new Set();         // topics drawn this cycle (no-repeat until the pool empties)
 
 function isPair(v) { return Array.isArray(v) && v.length === 2 && v[0] && v[1]; }
+function validTopic(p) { return p && p.id && (isPair(p.cs) || isPair(p.en)); }
 
 function loadSettings() {
   try {
@@ -37,19 +40,42 @@ function loadSettings() {
 function saveSettings() {
   try { localStorage.setItem(SETTINGS_KEY, JSON.stringify({ lang })); } catch { /* ignore */ }
 }
-function loadUserPrompts() {
+
+function saveTopics() {
   try {
-    const u = JSON.parse(localStorage.getItem(USER_KEY));
-    if (Array.isArray(u)) userPrompts = u.filter((p) => p && p.id && (isPair(p.cs) || isPair(p.en)));
+    localStorage.setItem(TOPICS_KEY, JSON.stringify(topics));
+    localStorage.setItem(DELSEED_KEY, JSON.stringify(deletedSeeds));
   } catch { /* ignore */ }
 }
-function saveUserPrompts() {
-  try { localStorage.setItem(USER_KEY, JSON.stringify(userPrompts)); } catch { /* ignore */ }
+
+// on-device topic store: the shipped deck is copied in on first run, then it's
+// fully owned & editable here. New seed topics from later deploys merge in,
+// unless the player deleted them.
+function loadTopics() {
+  try { const s = JSON.parse(localStorage.getItem(TOPICS_KEY)); if (Array.isArray(s)) topics = s.filter(validTopic); } catch { /* ignore */ }
+  try { const d = JSON.parse(localStorage.getItem(DELSEED_KEY)); if (Array.isArray(d)) deletedSeeds = d.filter((x) => typeof x === "string"); } catch { /* ignore */ }
+
+  // one-time migration from the old user-prompts key
+  try {
+    const old = JSON.parse(localStorage.getItem("prihoriva.userPrompts.v1"));
+    if (Array.isArray(old)) {
+      old.forEach((p) => { if (validTopic(p) && !topics.some((topic) => topic.id === p.id)) topics.push({ id: p.id, cs: p.cs, en: p.en, cat: p.cat || "jine" }); });
+      localStorage.removeItem("prihoriva.userPrompts.v1");
+    }
+  } catch { /* ignore */ }
+
+  // merge in seed topics we don't have yet and the player hasn't deleted
+  const have = new Set(topics.map((topic) => topic.id));
+  const gone = new Set(deletedSeeds);
+  SEED_PROMPTS.forEach((p) => {
+    if (!have.has(p.id) && !gone.has(p.id)) topics.push({ id: p.id, cs: p.cs, en: p.en, cat: p.cat || "jine" });
+  });
+  saveTopics();
 }
 
-// the active pool: every card carrying a label pair in the current language
+// the active pool: every topic carrying a label pair in the current language
 function pool() {
-  return [...SEED_PROMPTS, ...userPrompts].filter((p) => isPair(p[lang]));
+  return topics.filter((p) => isPair(p[lang]));
 }
 
 function drawPrompt() {
@@ -474,11 +500,11 @@ addBtn.addEventListener("click", () => {
   const otherStarted = l2 || r2;
   if (otherStarted && (!l2 || !r2)) { showAddError(t("errOther")); return; }
   const other = lang === "cs" ? "en" : "cs";
-  const card = { id: "u" + Date.now().toString(36) + Math.random().toString(36).slice(2, 5) };
+  const card = { id: "u" + Date.now().toString(36) + Math.random().toString(36).slice(2, 5), cat: "jine" };
   card[lang] = [l, r];
   if (otherStarted) card[other] = [l2, r2];
-  userPrompts.push(card);
-  saveUserPrompts();
+  topics.push(card);
+  saveTopics();
   resetAddForm();
   renderUserList();
 });
@@ -488,12 +514,13 @@ function escapeHtml(s) {
 }
 
 function renderUserList() {
-  userCount.textContent = String(userPrompts.length);
-  if (userPrompts.length === 0) {
+  const mine = topics.filter((topic) => topic.id[0] !== "s");   // player-added topics
+  userCount.textContent = String(mine.length);
+  if (mine.length === 0) {
     userList.innerHTML = `<li class="user-empty">${t("noTopics")}</li>`;
     return;
   }
-  userList.innerHTML = userPrompts.map((p) => {
+  userList.innerHTML = mine.map((p) => {
     const pair = p.cs || p.en;
     return `<li class="user-item"><span>${escapeHtml(pair[0])} → ${escapeHtml(pair[1])}</span>`
       + `<button class="user-del" data-id="${p.id}" aria-label="Smazat">×</button></li>`;
@@ -503,15 +530,16 @@ userList.addEventListener("click", (e) => {
   const btn = e.target.closest(".user-del");
   if (!btn) return;
   const id = btn.getAttribute("data-id");
-  userPrompts = userPrompts.filter((p) => p.id !== id);
+  topics = topics.filter((p) => p.id !== id);
+  if (id[0] === "s") deletedSeeds.push(id);   // remember deleted seed topics so they don't return
   usedIds.delete(id);
-  saveUserPrompts();
+  saveTopics();
   renderUserList();
 });
 
 // ---------- boot ----------
 loadSettings();
-loadUserPrompts();
+loadTopics();
 drawTicks();
 if (!restore()) newRound();
 applyLang();

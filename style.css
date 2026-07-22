@@ -291,14 +291,10 @@ body.team-green .prompt-side { background: var(--green-deep); }
   text-transform: uppercase;
   white-space: nowrap;
   background: var(--ink);
-  color: var(--yellow);
+  color: var(--paper);
   padding: 10px 12px;
   transform: rotate(-2deg);
   animation: pop 0.5s cubic-bezier(0.2, 1.6, 0.4, 1);
-}
-
-.score-chip.zero {
-  color: var(--paper);
 }
 
 @keyframes pop {
