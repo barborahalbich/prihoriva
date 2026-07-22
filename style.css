@@ -53,9 +53,11 @@ body { background: var(--screen-bg); }
   top: 0;
   left: 0;
   width: 100vw;
-  height: 100vh;
-  height: 100lvh;          /* cover the full screen even where iOS mis-sizes % heights */
-  z-index: -1;             /* behind the game, above the solid body fill */
+  height: 150vh;
+  height: 150lvh;          /* deliberate overscan: iOS standalone can mis-size the
+                              viewport, so extend the pattern well past the bottom
+                              edge — a solid body-colored strip can never show through */
+  z-index: -1;
   pointer-events: none;
 }
 .bg-fill { fill: transparent; }
@@ -225,9 +227,9 @@ body.state-reveal .wedge .band-label { visibility: visible; }
 .prompt-card {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  column-gap: 12px;
-  width: calc(100% + 16px);
-  margin: 14px -8px 0;
+  column-gap: 14px;
+  width: 100%;
+  margin: 14px 0 0;
 }
 
 /* clue cards read as tappable buttons: black, white keyline + white hard shadow */

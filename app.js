@@ -85,7 +85,6 @@ const secondaryBtn = document.getElementById("secondaryBtn");
 const passOverlay = document.getElementById("passOverlay");
 const passTitle = document.getElementById("passTitle");
 const passBtn = document.getElementById("passBtn");
-const passBack = document.getElementById("passBack");
 const peekOverlay = document.getElementById("peekOverlay");
 const peekYes = document.getElementById("peekYes");
 const peekNo = document.getElementById("peekNo");
@@ -220,13 +219,13 @@ const UI = {
     phLeft: "Left (−)", phRight: "Right (+)", myTopics: "My topics",
     noTopics: "No topics yet.", score: "Score", resetScore: "Reset score",
     back: "Back to the target",
-    peekTitle: "Show the<br>target?", peekYes: "Yes, show it",
-    skipTitle: "Skip?", skipYes: "Yes, skip",
+    peekTitle: "Reveal the<br>clue?", peekYes: "Yes, reveal",
+    skipTitle: "Skip the<br>prompt?", skipYes: "Yes, skip",
     resetTitle: "Reset<br>score?", resetYes: "Yes, reset", cancel: "Cancel",
     role_psychic: "Clue", role_guess: "Guess", role_reveal: "Reveal",
     btn_hide: "Hide & pass", btn_reveal: "Reveal", btn_continue: "Continue",
-    pass_phone: "Pass the<br>phone", pass_cover: "Cover the<br>screen",
-    btn_guess: "Guess", btn_clue: "Give a clue",
+    pass_phone: "Pass the<br>phone", pass_cover: "Hide the<br>screen",
+    btn_guess: "Ready to guess", btn_clue: "Give a new clue",
     band_0: "Cold", band_2: "Warmer", band_3: "Hot", band_5: "On fire",
     errEnds: "Fill in both ends.", errOther: "Other language: fill in both ends, or neither.",
   },
@@ -298,7 +297,6 @@ function showPass(mode) {
     passTitle.innerHTML = t("pass_cover");
     passBtn.textContent = t("btn_clue");
   }
-  passBack.hidden = mode !== "guess";   // "peek back at the target" only when handing to guessers
   passOverlay.hidden = false;
   save();
 }
@@ -369,11 +367,9 @@ passBtn.addEventListener("click", () => {
 
 // "back to the target" — the clue-giver forgot where it was; show the clue screen again
 function backToClue() {
-  passOverlay.hidden = true;
   peekOverlay.hidden = true;
   setState("psychic");
 }
-passBack.addEventListener("click", backToClue);
 peekYes.addEventListener("click", backToClue);
 peekNo.addEventListener("click", () => { peekOverlay.hidden = true; });
 
