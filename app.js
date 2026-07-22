@@ -92,6 +92,10 @@ const chipBlue = document.getElementById("chipBlue");
 const chipGreen = document.getElementById("chipGreen");
 const scoreBlue = document.getElementById("scoreBlue");
 const scoreGreen = document.getElementById("scoreGreen");
+const scorebugBtn = document.getElementById("scorebugBtn");
+const resetOverlay = document.getElementById("resetOverlay");
+const resetYes = document.getElementById("resetYes");
+const resetNo = document.getElementById("resetNo");
 
 // KONFIG (hidden config screen)
 const konfigOverlay = document.getElementById("konfigOverlay");
@@ -342,6 +346,16 @@ skipNo.addEventListener("click", () => {
   save();
 });
 
+// reset score (tap the scorebug → confirm)
+scorebugBtn.addEventListener("click", () => { resetOverlay.hidden = false; });
+resetNo.addEventListener("click", () => { resetOverlay.hidden = true; });
+resetYes.addEventListener("click", () => {
+  scores.blue = 0; scores.green = 0;
+  updateScoreboard();
+  resetOverlay.hidden = true;
+  save();
+});
+
 // ---------- KONFIG (hidden config screen) ----------
 const LANG_NAME = { cs: "Česky", en: "English" };
 
@@ -428,7 +442,7 @@ function escapeHtml(s) {
 function renderUserList() {
   userCount.textContent = String(userPrompts.length);
   if (userPrompts.length === 0) {
-    userList.innerHTML = '<li class="user-empty">Zatím žádné vlastní karty.</li>';
+    userList.innerHTML = '<li class="user-empty">Zatím žádná vlastní témata.</li>';
     return;
   }
   userList.innerHTML = userPrompts.map((p) => {
@@ -446,6 +460,15 @@ userList.addEventListener("click", (e) => {
   saveUserPrompts();
   renderUserList();
 });
+
+// keep the app exactly one screen tall (iOS standalone miscomputes 100dvh until
+// a reflow — the mystery "colored strip" at the bottom; innerHeight is reliable)
+function setAppHeight() {
+  document.documentElement.style.setProperty("--app-height", window.innerHeight + "px");
+}
+setAppHeight();
+window.addEventListener("resize", setAppHeight);
+window.addEventListener("orientationchange", setAppHeight);
 
 // ---------- boot ----------
 loadSettings();

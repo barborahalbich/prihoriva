@@ -62,7 +62,7 @@ body.state-guess   .bg-fill { fill: url(#pat-q); }
 body.state-reveal  .bg-fill { fill: url(#pat-fire); }
 
 .game {
-  height: 100dvh;
+  height: var(--app-height, 100svh);
   max-width: 480px;
   margin: 0 auto;
   display: flex;
@@ -92,12 +92,24 @@ body.state-reveal  .bg-fill { fill: url(#pat-fire); }
   transform: rotate(-4deg);
 }
 
-/* scorebug: two team-colored chips, the lifted one is the active team */
+/* scorebug: a tappable button (opens the reset-score confirm) holding two team chips */
 .scoreboard {
   display: flex;
-  gap: 12px;
-  align-items: flex-start;
-  padding-top: 2px;
+  gap: 10px;
+  align-items: center;
+  appearance: none;
+  border: 3px solid var(--ink);
+  border-radius: 0;
+  background: var(--paper);
+  box-shadow: var(--shadow);
+  padding: 7px 9px;
+  font: inherit;
+  cursor: pointer;
+  transition: transform 0.08s ease, box-shadow 0.08s ease;
+}
+.scoreboard:active {
+  transform: translate(4px, 4px);
+  box-shadow: 1px 1px 0 var(--ink);
 }
 
 .team-chip {
@@ -435,6 +447,7 @@ body.state-reveal .wedge .band-label { visibility: visible; }
   border: 3px solid var(--ink);
   border-radius: 0;
   background: var(--paper);
+  color: var(--ink);           /* iOS defaults unstyled button text to system blue */
   padding: 12px;
   font-family: inherit;
   font-size: 16px;
