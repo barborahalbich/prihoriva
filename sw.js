@@ -1,7 +1,7 @@
 /* Přihořívá service worker — offline app shell.
  * Network-first so a new deploy lands when online; cached copy keeps it
  * playable with no signal (a garden, a chata, a plane). Bump CACHE on release. */
-const CACHE = "prihoriva-v7";
+const CACHE = "prihoriva-v8";
 const ASSETS = [
   "./", "./index.html", "./style.css", "./app.js", "./prompts.js",
   "./manifest.webmanifest", "./icon-180.png", "./icon-192.png", "./icon-512.png",

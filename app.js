@@ -131,16 +131,25 @@ const konfigOverlay = document.getElementById("konfigOverlay");
 const konfigClose = document.getElementById("konfigClose");
 const langBtns = { cs: document.getElementById("langCs"), en: document.getElementById("langEn") };
 const wipeBtn = document.getElementById("wipeBtn");
-const addLeft = document.getElementById("addLeft");
-const addRight = document.getElementById("addRight");
-const addLeft2 = document.getElementById("addLeft2");
-const addRight2 = document.getElementById("addRight2");
-const addBtn = document.getElementById("addBtn");
-const addError = document.getElementById("addError");
-const addPrimaryName = document.getElementById("addPrimaryName");
-const addOtherName = document.getElementById("addOtherName");
-const userList = document.getElementById("userList");
-const userCount = document.getElementById("userCount");
+const newTopicBtn = document.getElementById("newTopicBtn");
+const filterTabs = document.getElementById("filterTabs");
+const topicList = document.getElementById("topicList");
+const topicCount = document.getElementById("topicCount");
+const editOverlay = document.getElementById("editOverlay");
+const editTitle = document.getElementById("editTitle");
+const editClose = document.getElementById("editClose");
+const editCats = document.getElementById("editCats");
+const editCsL = document.getElementById("editCsL");
+const editCsR = document.getElementById("editCsR");
+const editEnL = document.getElementById("editEnL");
+const editEnR = document.getElementById("editEnR");
+const editError = document.getElementById("editError");
+const editSave = document.getElementById("editSave");
+const editDelete = document.getElementById("editDelete");
+const editDeleteSec = document.getElementById("editDeleteSec");
+const delOverlay = document.getElementById("delOverlay");
+const delYes = document.getElementById("delYes");
+const delNo = document.getElementById("delNo");
 
 // ---------- state ----------
 let state = "psychic";        // psychic | guess | reveal
@@ -238,7 +247,10 @@ const UI = {
     pass_phone: "Předej<br>telefon", pass_cover: "Zakryj<br>displej",
     btn_guess: "Hádat", btn_clue: "Napovídat",
     band_0: "Zima", band_2: "Přihořívá", band_3: "Teplo", band_5: "Hoří",
-    errEnds: "Vyplň oba konce.", errOther: "Druhý jazyk: vyplň oba konce, nebo žádný.",
+    topics: "Témata", newTopic: "Nové téma", editTopic: "Upravit téma", allCats: "Vše",
+    category: "Kategorie", save: "Uložit", deleteTopic: "Smazat téma",
+    deleteTitle: "Smazat<br>téma?", deleteYes: "Ano, smazat",
+    errPair: "Vyplň oba konce, nebo žádný.", errNeedOne: "Vyplň aspoň jeden jazyk.",
   },
   en: {
     done: "Done", language: "Language", addTopic: "Add topic", optional: "(optional)",
@@ -253,7 +265,10 @@ const UI = {
     pass_phone: "Pass the<br>phone", pass_cover: "Hide the<br>screen",
     btn_guess: "Ready to guess", btn_clue: "Give a new clue",
     band_0: "Cold", band_2: "Warmer", band_3: "Hot", band_5: "On fire",
-    errEnds: "Fill in both ends.", errOther: "Other language: fill in both ends, or neither.",
+    topics: "Topics", newTopic: "New topic", editTopic: "Edit topic", allCats: "All",
+    category: "Category", save: "Save", deleteTopic: "Delete topic",
+    deleteTitle: "Delete<br>topic?", deleteYes: "Yes, delete",
+    errPair: "Fill in both ends, or neither.", errNeedOne: "Fill in at least one language.",
   },
 };
 function t(key) { return (UI[lang] && UI[lang][key]) || UI.cs[key] || key; }
@@ -439,8 +454,8 @@ stateHint.addEventListener("click", () => {
 
 function openKonfig() {
   syncLangUI();
-  renderUserList();
-  resetAddForm();
+  renderFilterTabs();
+  renderTopicList();
   konfigOverlay.hidden = false;
 }
 function closeKonfig() {
@@ -452,9 +467,6 @@ konfigClose.addEventListener("click", closeKonfig);
 function syncLangUI() {
   langBtns.cs.classList.toggle("active", lang === "cs");
   langBtns.en.classList.toggle("active", lang === "en");
-  const other = lang === "cs" ? "en" : "cs";
-  addPrimaryName.textContent = LANG_NAME[lang];
-  addOtherName.textContent = LANG_NAME[other];
 }
 
 function setLang(next) {
@@ -473,7 +485,7 @@ function applyLang() {
   document.querySelectorAll("[data-i18n-ph]").forEach((el) => { el.placeholder = t(el.dataset.i18nPh); });
   syncLangUI();
   renderPrompt();
-  renderUserList();
+  if (!konfigOverlay.hidden) { renderFilterTabs(); renderTopicList(); }
   setState(state);   // role tag, primary button, score chip
 }
 langBtns.cs.addEventListener("click", () => setLang("cs"));
@@ -485,56 +497,122 @@ wipeBtn.addEventListener("click", () => {
   resetOverlay.hidden = false;
 });
 
-// add a card
-function resetAddForm() {
-  addLeft.value = ""; addRight.value = "";
-  addLeft2.value = ""; addRight2.value = "";
-  addError.hidden = true;
-}
-function showAddError(msg) { addError.textContent = msg; addError.hidden = false; }
-
-addBtn.addEventListener("click", () => {
-  const l = addLeft.value.trim(), r = addRight.value.trim();
-  const l2 = addLeft2.value.trim(), r2 = addRight2.value.trim();
-  if (!l || !r) { showAddError(t("errEnds")); return; }
-  const otherStarted = l2 || r2;
-  if (otherStarted && (!l2 || !r2)) { showAddError(t("errOther")); return; }
-  const other = lang === "cs" ? "en" : "cs";
-  const card = { id: "u" + Date.now().toString(36) + Math.random().toString(36).slice(2, 5), cat: "jine" };
-  card[lang] = [l, r];
-  if (otherStarted) card[other] = [l2, r2];
-  topics.push(card);
-  saveTopics();
-  resetAddForm();
-  renderUserList();
-});
-
+// ---------- topic manager ----------
 function escapeHtml(s) {
   return s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 }
+function catName(key) {
+  const c = CATEGORIES.find((x) => x.key === key);
+  return c ? c[lang] : key;
+}
 
-function renderUserList() {
-  const mine = topics.filter((topic) => topic.id[0] !== "s");   // player-added topics
-  userCount.textContent = String(mine.length);
-  if (mine.length === 0) {
-    userList.innerHTML = `<li class="user-empty">${t("noTopics")}</li>`;
+let filterCat = "all";              // which category the manager list shows
+let editingId = null;               // topic being edited (null = new)
+let editCat = "jine";               // category selected in the edit overlay
+let pendingDelId = null;            // topic queued for deletion
+
+// generic chip row: [{key,label}], highlight active, call onPick(key)
+function renderChips(container, items, activeKey, onPick) {
+  container.innerHTML = "";
+  items.forEach((it) => {
+    const b = document.createElement("button");
+    b.className = "chip" + (it.key === activeKey ? " active" : "");
+    b.textContent = it.label;
+    b.addEventListener("click", () => onPick(it.key));
+    container.appendChild(b);
+  });
+}
+
+function renderFilterTabs() {
+  const items = [{ key: "all", label: t("allCats") }].concat(CATEGORIES.map((c) => ({ key: c.key, label: c[lang] })));
+  renderChips(filterTabs, items, filterCat, (key) => { filterCat = key; renderFilterTabs(); renderTopicList(); });
+}
+
+function renderTopicList() {
+  topicCount.textContent = String(topics.length);
+  const shown = topics.filter((p) => filterCat === "all" || p.cat === filterCat);
+  if (shown.length === 0) {
+    topicList.innerHTML = `<li class="user-empty">${t("noTopics")}</li>`;
     return;
   }
-  userList.innerHTML = mine.map((p) => {
-    const pair = p.cs || p.en;
-    return `<li class="user-item"><span>${escapeHtml(pair[0])} → ${escapeHtml(pair[1])}</span>`
-      + `<button class="user-del" data-id="${p.id}" aria-label="Smazat">×</button></li>`;
+  topicList.innerHTML = shown.map((p) => {
+    const pair = isPair(p[lang]) ? p[lang] : (p.cs || p.en);
+    const tag = filterCat === "all" ? `<span class="cat-tag">${escapeHtml(catName(p.cat))}</span>` : "";
+    return `<li><button class="topic-row" data-id="${p.id}">`
+      + `<span>${escapeHtml(pair[0])} → ${escapeHtml(pair[1])}</span>${tag}</button></li>`;
   }).join("");
 }
-userList.addEventListener("click", (e) => {
-  const btn = e.target.closest(".user-del");
-  if (!btn) return;
-  const id = btn.getAttribute("data-id");
+topicList.addEventListener("click", (e) => {
+  const row = e.target.closest(".topic-row");
+  if (!row) return;
+  openEdit(topics.find((p) => p.id === row.getAttribute("data-id")) || null);
+});
+
+newTopicBtn.addEventListener("click", () => openEdit(null));
+
+function openEdit(topic) {
+  editingId = topic ? topic.id : null;
+  const isNew = !topic;
+  editTitle.textContent = isNew ? t("newTopic") : t("editTopic");
+  editCat = topic ? (topic.cat || "jine") : "jine";
+  editCsL.value = topic && topic.cs ? topic.cs[0] : "";
+  editCsR.value = topic && topic.cs ? topic.cs[1] : "";
+  editEnL.value = topic && topic.en ? topic.en[0] : "";
+  editEnR.value = topic && topic.en ? topic.en[1] : "";
+  editError.hidden = true;
+  editDeleteSec.hidden = isNew;
+  renderEditCats();
+  editOverlay.hidden = false;
+}
+function renderEditCats() {
+  renderChips(editCats, CATEGORIES.map((c) => ({ key: c.key, label: c[lang] })), editCat, (key) => {
+    editCat = key;
+    renderEditCats();
+  });
+}
+editClose.addEventListener("click", () => { editOverlay.hidden = true; });
+
+function showEditError(msg) { editError.textContent = msg; editError.hidden = false; }
+
+editSave.addEventListener("click", () => {
+  const csL = editCsL.value.trim(), csR = editCsR.value.trim();
+  const enL = editEnL.value.trim(), enR = editEnR.value.trim();
+  const csOk = csL && csR, enOk = enL && enR;
+  if ((csL || csR) && !csOk) { showEditError(t("errPair")); return; }
+  if ((enL || enR) && !enOk) { showEditError(t("errPair")); return; }
+  if (!csOk && !enOk) { showEditError(t("errNeedOne")); return; }
+
+  let topic = editingId ? topics.find((p) => p.id === editingId) : null;
+  if (topic) {
+    if (csOk) topic.cs = [csL, csR]; else delete topic.cs;
+    if (enOk) topic.en = [enL, enR]; else delete topic.en;
+    topic.cat = editCat;
+  } else {
+    topic = { id: "u" + Date.now().toString(36) + Math.random().toString(36).slice(2, 5), cat: editCat };
+    if (csOk) topic.cs = [csL, csR];
+    if (enOk) topic.en = [enL, enR];
+    topics.push(topic);
+  }
+  saveTopics();
+  editOverlay.hidden = true;
+  renderFilterTabs();
+  renderTopicList();
+  if (current && current.id === topic.id) renderPrompt();   // refresh the in-play card if it was edited
+});
+
+// delete a topic (with confirm)
+editDelete.addEventListener("click", () => { pendingDelId = editingId; delOverlay.hidden = false; });
+delNo.addEventListener("click", () => { delOverlay.hidden = true; });
+delYes.addEventListener("click", () => {
+  const id = pendingDelId;
   topics = topics.filter((p) => p.id !== id);
-  if (id[0] === "s") deletedSeeds.push(id);   // remember deleted seed topics so they don't return
+  if (id && id[0] === "s") deletedSeeds.push(id);   // don't let deleted seed topics return
   usedIds.delete(id);
   saveTopics();
-  renderUserList();
+  delOverlay.hidden = true;
+  editOverlay.hidden = true;
+  renderFilterTabs();
+  renderTopicList();
 });
 
 // ---------- boot ----------

@@ -36,15 +36,17 @@ body {
 }
 
 /* per-team, per-state screen fills */
-/* dark motifs on the light team color for BOTH clue + guess — one consistent contrast */
-body.team-blue.state-psychic  { --screen-bg: var(--blue-light);  --screen-ink: #111111; --pattern-ink: var(--blue-deep); }
-body.team-blue.state-guess    { --screen-bg: var(--blue-light);  --screen-ink: #111111; --pattern-ink: var(--blue-deep); }
-body.team-green.state-psychic { --screen-bg: var(--green-light); --screen-ink: #111111; --pattern-ink: var(--green-deep); }
-body.team-green.state-guess   { --screen-bg: var(--green-light); --screen-ink: #111111; --pattern-ink: var(--green-deep); }
-body.state-reveal.r5 { --screen-bg: var(--red);    --screen-ink: #ffffff; --pattern-ink: #a81810; }
-body.state-reveal.r3 { --screen-bg: var(--orange); --screen-ink: #111111; --pattern-ink: #b85600; }
-body.state-reveal.r2 { --screen-bg: var(--yellow); --screen-ink: #111111; --pattern-ink: #d9b400; }
-body.state-reveal.r0 { --screen-bg: var(--miss);   --screen-ink: #111111; --pattern-ink: #8f8f8f; }
+/* dark motifs on the light team color for BOTH clue + guess — one consistent contrast.
+   --pattern-ink is the SHAPE color: halfway between the screen fill and the deep color,
+   so the backdrop reads softer without changing anything else. */
+body.team-blue.state-psychic  { --screen-bg: var(--blue-light);  --screen-ink: #111111; --pattern-ink: #2e53d3; }
+body.team-blue.state-guess    { --screen-bg: var(--blue-light);  --screen-ink: #111111; --pattern-ink: #2e53d3; }
+body.team-green.state-psychic { --screen-bg: var(--green-light); --screen-ink: #111111; --pattern-ink: #17a054; }
+body.team-green.state-guess   { --screen-bg: var(--green-light); --screen-ink: #111111; --pattern-ink: #17a054; }
+body.state-reveal.r5 { --screen-bg: var(--red);    --screen-ink: #ffffff; --pattern-ink: #c42117; }
+body.state-reveal.r3 { --screen-bg: var(--orange); --screen-ink: #111111; --pattern-ink: #d46400; }
+body.state-reveal.r2 { --screen-bg: var(--yellow); --screen-ink: #111111; --pattern-ink: #ecc900; }
+body.state-reveal.r0 { --screen-bg: var(--miss);   --screen-ink: #111111; --pattern-ink: #9f9f9f; }
 body { background: var(--screen-bg); }
 
 /* ---------- seamless mode-cue backdrop ---------- */
@@ -490,32 +492,53 @@ body.team-green .prompt-side { background: var(--green-deep); }
 
 .add-error { margin: 4px 0 10px; color: var(--red); font-weight: 900; font-size: 13px; }
 
-/* my cards list */
-.user-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
-.user-item {
+/* topic manager */
+.topics-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
+.topics-head h3 { margin: 0; }
+.btn.small { width: auto; padding: 8px 12px; font-size: 13px; box-shadow: 3px 3px 0 var(--ink); }
+
+.chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+.chip {
+  appearance: none;
+  border: 2px solid var(--ink);
+  border-radius: 0;
+  background: var(--paper);
+  color: var(--ink);
+  padding: 6px 10px;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+}
+.chip.active { background: var(--ink); color: var(--paper); }
+
+.topic-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.topic-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
-  border: 3px solid var(--ink);
-  padding: 10px 12px;
-  font-weight: 800;
-  font-size: 14px;
-}
-.user-empty { font-weight: 700; opacity: 0.5; font-size: 14px; }
-.user-del {
-  flex: none;
+  gap: 8px;
+  width: 100%;
   appearance: none;
   border: 3px solid var(--ink);
-  background: var(--red);
-  color: var(--paper);
-  width: 34px;
-  height: 34px;
-  font-size: 18px;
-  font-weight: 900;
-  line-height: 1;
+  background: var(--paper);
+  color: var(--ink);
+  padding: 9px 11px;
+  font-family: inherit;
+  font-weight: 800;
+  font-size: 14px;
+  text-align: left;
   cursor: pointer;
 }
+.topic-row .cat-tag { flex: none; font-size: 10px; font-weight: 900; opacity: 0.45; text-transform: uppercase; letter-spacing: 0.03em; }
+.user-empty { font-weight: 700; opacity: 0.5; font-size: 14px; padding: 4px 2px; }
+
+/* edit + delete overlays stack above KONFIG */
+#editOverlay { z-index: 30; }
+#delOverlay { z-index: 40; }
+#editDeleteSec { background: none; border: none; box-shadow: none; padding: 0; }
 
 /* danger + wipe confirm */
 .btn.danger { background: var(--red); color: var(--paper); }
