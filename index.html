@@ -193,7 +193,18 @@
   <script src="app.js"></script>
   <script>
     if ("serviceWorker" in navigator) {
-      window.addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
+      window.addEventListener("load", () => {
+        navigator.serviceWorker.register("sw.js", { updateViaCache: "none" }).then((reg) => {
+          reg.addEventListener("updatefound", () => {
+            const nw = reg.installing;
+            if (!nw) return;
+            nw.addEventListener("statechange", () => {
+              // a newer version installed over an existing one — refresh to it
+              if (nw.state === "installed" && navigator.serviceWorker.controller) location.reload();
+            });
+          });
+        }).catch(() => {});
+      });
     }
   </script>
 </body>
