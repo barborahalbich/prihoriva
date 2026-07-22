@@ -232,21 +232,22 @@ body.state-reveal .wedge .band-label { visibility: visible; }
   margin: 14px 0 0;
 }
 
-/* clue cards read as tappable buttons: black, white keyline + white hard shadow */
+/* clue cards read as tappable buttons: deep team color, black keyline + black shadow */
 .prompt-side {
   display: grid;
   grid-template-rows: auto 1fr;
   justify-items: center;
   gap: 16px;
   padding: 22px 12px 24px;
-  background: var(--ink);
-  border: 3px solid var(--paper);
-  box-shadow: 6px 6px 0 var(--paper);
+  border: 3px solid var(--ink);
+  box-shadow: 6px 6px 0 var(--ink);
   transition: transform 0.08s ease, box-shadow 0.08s ease;
 }
+body.team-blue .prompt-side  { background: var(--blue-deep); }
+body.team-green .prompt-side { background: var(--green-deep); }
 .prompt-card:active .prompt-side {
   transform: translate(3px, 3px);
-  box-shadow: 3px 3px 0 var(--paper);
+  box-shadow: 3px 3px 0 var(--ink);
 }
 
 .prompt-arrow {

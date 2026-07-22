@@ -223,7 +223,7 @@ const UI = {
     skipTitle: "Skip the<br>prompt?", skipYes: "Yes, skip",
     resetTitle: "Reset<br>score?", resetYes: "Yes, reset", cancel: "Cancel",
     role_psychic: "Clue", role_guess: "Guess", role_reveal: "Reveal",
-    btn_hide: "Hide & pass", btn_reveal: "Reveal", btn_continue: "Continue",
+    btn_hide: "Conceal & pass", btn_reveal: "Reveal", btn_continue: "Continue",
     pass_phone: "Pass the<br>phone", pass_cover: "Hide the<br>screen",
     btn_guess: "Ready to guess", btn_clue: "Give a new clue",
     band_0: "Cold", band_2: "Warmer", band_3: "Hot", band_5: "On fire",
