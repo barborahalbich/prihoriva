@@ -47,6 +47,9 @@ body.state-reveal.r5 { --screen-bg: var(--red);    --screen-ink: #ffffff; --patt
 body.state-reveal.r3 { --screen-bg: var(--orange); --screen-ink: #111111; --pattern-ink: #d46400; }
 body.state-reveal.r2 { --screen-bg: var(--yellow); --screen-ink: #111111; --pattern-ink: #ecc900; }
 body.state-reveal.r0 { --screen-bg: var(--miss);   --screen-ink: #111111; --pattern-ink: #9f9f9f; }
+/* win screen wears the winning team's colours */
+body.team-blue.state-win  { --screen-bg: var(--blue-light);  --screen-ink: #111111; --pattern-ink: #2e53d3; }
+body.team-green.state-win { --screen-bg: var(--green-light); --screen-ink: #111111; --pattern-ink: #17a054; }
 body { background: var(--screen-bg); }
 
 /* ---------- seamless mode-cue backdrop ---------- */
@@ -66,6 +69,7 @@ body { background: var(--screen-bg); }
 body.state-psychic .bg-fill { fill: url(#pat-speech); }
 body.state-guess   .bg-fill { fill: url(#pat-q); }
 body.state-reveal  .bg-fill { fill: url(#pat-fire); }
+body.state-win     .bg-fill { fill: url(#pat-star); }
 
 /* anchored to top AND bottom edges so there's never a gap the body color peeks through
    (iOS standalone mis-sizes height units; fixed inset:0 is bulletproof) */
@@ -401,6 +405,63 @@ body.team-green .prompt-side { background: var(--green-deep); }
   cursor: pointer;
 }
 
+/* ---------- win screen ---------- */
+body.state-win .game { display: none; }   /* let the star backdrop show through */
+
+.win-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 15;
+  max-width: 480px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 26px;
+  padding: max(12px, env(safe-area-inset-top)) 16px max(16px, env(safe-area-inset-bottom));
+}
+.win-overlay[hidden] { display: none; }
+
+.win-inner {
+  margin: auto 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 26px;
+}
+
+.win-cheer {
+  background: var(--ink);
+  color: var(--paper);
+  font-size: min(9vw, 42px);
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  padding: 10px 16px;
+  transform: rotate(-2deg);
+  animation: pop 0.5s cubic-bezier(0.2, 1.6, 0.4, 1);
+}
+
+.win-score { display: flex; gap: 14px; }
+.win-chip {
+  min-width: 96px;
+  padding: 14px 10px;
+  display: grid;
+  place-items: center;
+  border: 4px solid var(--ink);
+  box-shadow: 6px 6px 0 var(--ink);
+  color: var(--paper);
+  font-size: 46px;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+}
+.win-chip.blue { background: var(--blue-deep); }
+.win-chip.green { background: var(--green-deep); }
+
+.win-overlay .btn { width: 100%; margin-top: auto; }
+
 /* ---------- KONFIG (hidden config screen) ---------- */
 .konfig-overlay {
   position: fixed;
@@ -555,7 +616,7 @@ body.team-green .prompt-side { background: var(--green-deep); }
   border-radius: 0;
   padding: 10px;
   font-family: ui-monospace, Menlo, monospace;
-  font-size: 12px;
+  font-size: 16px;      /* iOS force-zooms any focusable field under 16px */
   line-height: 1.4;
   background: var(--paper);
   color: var(--ink);

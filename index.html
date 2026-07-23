@@ -29,6 +29,9 @@
       <g id="m-fire">
         <path d="M50 4 C 60 26, 56 34, 62 42 C 70 36, 70 30, 69 26 C 82 44, 80 68, 62 80 C 54 86, 46 86, 38 80 C 22 68, 24 48, 36 40 C 40 48, 46 44, 47 36 C 49 24, 46 14, 50 4 Z"></path>
       </g>
+      <g id="m-star">
+        <path d="M50 5 L62 37 L96 40 L68 60 L77 93 L49 73 L21 91 L33 58 L4 38 L38 37 Z"></path>
+      </g>
       <pattern id="pat-speech" patternUnits="userSpaceOnUse" width="180" height="180">
         <g fill="var(--pattern-ink, transparent)">
           <use href="#m-speech" transform="translate(14 16) rotate(-14) scale(0.74)"></use>
@@ -45,6 +48,12 @@
         <g fill="var(--pattern-ink, transparent)">
           <use href="#m-fire" transform="translate(14 16) rotate(-14) scale(0.74)"></use>
           <use href="#m-fire" transform="translate(100 92) rotate(12) scale(0.74)"></use>
+        </g>
+      </pattern>
+      <pattern id="pat-star" patternUnits="userSpaceOnUse" width="180" height="180">
+        <g fill="var(--pattern-ink, transparent)">
+          <use href="#m-star" transform="translate(14 16) rotate(-14) scale(0.74)"></use>
+          <use href="#m-star" transform="translate(100 92) rotate(12) scale(0.74)"></use>
         </g>
       </pattern>
     </defs>
@@ -99,7 +108,6 @@
 
     <footer class="actions">
       <button class="btn primary" id="primaryBtn"></button>
-      <button class="btn ghost" id="secondaryBtn" hidden></button>
     </footer>
 
   </main>
@@ -145,6 +153,18 @@
     </div>
   </div>
 
+  <!-- win screen: winning team's fill + star backdrop showing through -->
+  <div class="win-overlay" id="winOverlay" hidden>
+    <div class="win-inner">
+      <div class="win-cheer" id="winCheer">Vítězství!</div>
+      <div class="win-score">
+        <span class="win-chip blue" id="winBlue">0</span>
+        <span class="win-chip green" id="winGreen">0</span>
+      </div>
+    </div>
+    <button class="btn" id="newGameBtn" data-i18n="newGame">Nová hra</button>
+  </div>
+
   <!-- KONFIG: hidden config screen (triple-tap the state tag to open) -->
   <div class="konfig-overlay" id="konfigOverlay" hidden>
     <div class="konfig-panel">
@@ -162,8 +182,11 @@
       </section>
 
       <section class="konfig-sec">
-        <h3 data-i18n="play">Co hrát</h3>
+        <h3 data-i18n="play">Hra</h3>
+        <div class="field-lang" data-i18n="category">Kategorie</div>
         <div class="chips" id="playCats"></div>
+        <div class="field-lang" data-i18n="winLabel">Hra do</div>
+        <div class="chips" id="winChips"></div>
       </section>
 
       <section class="konfig-sec">

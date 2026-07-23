@@ -25,6 +25,7 @@ const CATS_KEY = "prihoriva.cats.v1";
 
 let lang = "cs";                 // active language: "cs" | "en"
 let playCat = "all";             // which category is in play ("all" = shuffle everything)
+let winTarget = 12;              // score that ends the game (0 = free play, no winner)
 let topics = [];                 // every topic, on-device & editable: [{ id, cs?, en?, cat }]
 let deletedSeeds = [];           // seed ids the player removed (so they don't return on merge)
 let cats = [];                   // categories, on-device & editable: [{ key, cs, en }]
@@ -39,10 +40,11 @@ function loadSettings() {
     const s = JSON.parse(localStorage.getItem(SETTINGS_KEY));
     if (s && (s.lang === "cs" || s.lang === "en")) lang = s.lang;
     if (s && typeof s.playCat === "string") playCat = s.playCat;
+    if (s && Number.isFinite(s.winTarget) && s.winTarget >= 0) winTarget = s.winTarget;
   } catch { /* ignore */ }
 }
 function saveSettings() {
-  try { localStorage.setItem(SETTINGS_KEY, JSON.stringify({ lang, playCat })); } catch { /* ignore */ }
+  try { localStorage.setItem(SETTINGS_KEY, JSON.stringify({ lang, playCat, winTarget })); } catch { /* ignore */ }
 }
 
 function saveTopics() {
@@ -114,7 +116,11 @@ function drawPrompt() {
 }
 
 function renderPrompt() {
-  const [left, right] = current ? current[lang] : ["—", "—"];
+  // fall back across languages so editing away the in-play pair can't break the card,
+  // and say something useful if the deck is empty rather than showing "—"
+  const pair = current && (isPair(current[lang]) ? current[lang]
+    : (isPair(current.cs) ? current.cs : current.en));
+  const [left, right] = isPair(pair) ? pair : [t("emptyL"), t("emptyR")];
   labelLeft.textContent = left;
   labelRight.textContent = right;
 }
@@ -129,7 +135,6 @@ const labelRight = document.getElementById("labelRight");
 const stateHint = document.getElementById("stateHint");
 const scoreChip = document.getElementById("scoreChip");
 const primaryBtn = document.getElementById("primaryBtn");
-const secondaryBtn = document.getElementById("secondaryBtn");
 const passOverlay = document.getElementById("passOverlay");
 const passTitle = document.getElementById("passTitle");
 const passBtn = document.getElementById("passBtn");
@@ -144,6 +149,12 @@ const chipGreen = document.getElementById("chipGreen");
 const scoreBlue = document.getElementById("scoreBlue");
 const scoreGreen = document.getElementById("scoreGreen");
 const scorebugBtn = document.getElementById("scorebugBtn");
+const winOverlay = document.getElementById("winOverlay");
+const winCheer = document.getElementById("winCheer");
+const winBlue = document.getElementById("winBlue");
+const winGreen = document.getElementById("winGreen");
+const newGameBtn = document.getElementById("newGameBtn");
+const winChips = document.getElementById("winChips");
 const resetOverlay = document.getElementById("resetOverlay");
 const resetYes = document.getElementById("resetYes");
 const resetNo = document.getElementById("resetNo");
@@ -291,10 +302,11 @@ function scoreFor(needleT, targetT) {
 // ---------- localization (UI + the hot/cold ladder) ----------
 const UI = {
   cs: {
-    done: "Hotovo", language: "Jazyk", addTopic: "Přidat téma", optional: "(nepovinné)",
-    phLeft: "Levá (−)", phRight: "Pravá (+)", myTopics: "Moje témata",
+    done: "Hotovo", language: "Jazyk",
+    phLeft: "Levá (−)", phRight: "Pravá (+)",
     noTopics: "Zatím žádná vlastní témata.", score: "Skóre", resetScore: "Vynulovat skóre",
-    back: "Zpět k zadání",
+    emptyL: "Žádná témata", emptyR: "Přidej v KONFIGu",
+    winLabel: "Hra do", freePlay: "Volná hra", winCheer: "Vítězství!", newGame: "Nová hra",
     peekTitle: "Ukázat<br>zadání?", peekYes: "Ano, ukázat",
     skipTitle: "Přeskočit?", skipYes: "Ano, přeskočit",
     resetTitle: "Vynulovat<br>skóre?", resetYes: "Ano, vynulovat", cancel: "Zrušit",
@@ -309,9 +321,9 @@ const UI = {
     category: "Kategorie", save: "Uložit", deleteTopic: "Smazat téma",
     deleteTitle: "Smazat<br>téma?", deleteYes: "Ano, smazat",
     errPair: "Vyplň oba konce, nebo žádný.", errNeedOne: "Vyplň aspoň jeden jazyk.",
-    categories: "Kategorie", newCat: "Nová kategorie", newCatShort: "Nová",
+    categories: "Kategorie", newCat: "Nová kategorie",
     editCatTitle: "Upravit kategorii", deleteCat: "Smazat kategorii",
-    deleteCatTitle: "Smazat<br>kategorii?", deleteCatNote: "Témata se přesunou do Jiné.",
+    deleteCatTitle: "Smazat<br>kategorii?",
     catNamePh: "Název", errCatName: "Vyplň název.",
     backup: "Záloha", restore: "Obnovit", exportBtn: "Zálohovat",
     exportHint: "Zkopíruj a ulož si tento text (např. do Poznámek).",
@@ -320,10 +332,11 @@ const UI = {
     restoreYes: "Ano, obnovit", importErr: "Neplatná záloha.",
   },
   en: {
-    done: "Done", language: "Language", addTopic: "Add topic", optional: "(optional)",
-    phLeft: "Left (−)", phRight: "Right (+)", myTopics: "My topics",
+    done: "Done", language: "Language",
+    phLeft: "Left (−)", phRight: "Right (+)",
     noTopics: "No topics yet.", score: "Score", resetScore: "Reset score",
-    back: "Back to the target",
+    emptyL: "No topics", emptyR: "Add one in CONFIG",
+    winLabel: "Play to", freePlay: "Free play", winCheer: "Victory!", newGame: "New game",
     peekTitle: "Reveal the<br>clue?", peekYes: "Yes, reveal",
     skipTitle: "Skip the<br>prompt?", skipYes: "Yes, skip",
     resetTitle: "Reset<br>score?", resetYes: "Yes, reset", cancel: "Cancel",
@@ -338,9 +351,9 @@ const UI = {
     category: "Category", save: "Save", deleteTopic: "Delete topic",
     deleteTitle: "Delete<br>topic?", deleteYes: "Yes, delete",
     errPair: "Fill in both ends, or neither.", errNeedOne: "Fill in at least one language.",
-    categories: "Categories", newCat: "New category", newCatShort: "New",
+    categories: "Categories", newCat: "New category",
     editCatTitle: "Edit category", deleteCat: "Delete category",
-    deleteCatTitle: "Delete<br>category?", deleteCatNote: "Its topics move to Other.",
+    deleteCatTitle: "Delete<br>category?",
     catNamePh: "Name", errCatName: "Enter a name.",
     backup: "Backup", restore: "Restore", exportBtn: "Back up",
     exportHint: "Copy and save this text (e.g. to Notes).",
@@ -379,6 +392,7 @@ function save() {
     localStorage.setItem(SAVE_KEY, JSON.stringify({
       scores, currentTeam, state, currentId: current ? current.id : null,
       usedIds: [...usedIds], target, needle, lastPts, overlay,
+      won: !winOverlay.hidden,
     }));
   } catch { /* storage unavailable (private mode etc.) — play on without saving */ }
 }
@@ -401,6 +415,7 @@ function restore() {
     setState(["psychic", "guess", "reveal"].includes(s.state) ? s.state : "psychic");
     // re-cover the target if the phone was mid-handoff when it reloaded
     if (s.overlay === "guess" || s.overlay === "team") showPass(s.overlay);
+    if (s.won) showWin(currentTeam);   // came back to a finished game
     return true;
   } catch {
     return false;
@@ -439,7 +454,6 @@ function setState(next) {
   wedgeEl.classList.toggle("hidden-wedge", !showWedge);
   dial.classList.toggle("dial-disabled", state === "psychic");
   scoreChip.hidden = state !== "reveal";
-  secondaryBtn.hidden = true;
 
   if (state === "psychic") {
     document.body.className = `team-${currentTeam} state-psychic`;
@@ -471,11 +485,32 @@ primaryBtn.addEventListener("click", () => {
     scores[currentTeam] += lastPts;
     setState("reveal");
   } else if (state === "reveal") {
+    // the team that just scored may have crossed the finish line
+    if (winTarget > 0 && scores[currentTeam] >= winTarget) { showWin(currentTeam); return; }
     // set up the next round, then cover the screen so the next clue-giver can look privately
     currentTeam = otherTeam();
     newRound();
     showPass("team");
   }
+});
+
+// ---------- win screen ----------
+function showWin(team) {
+  currentTeam = team;
+  document.body.className = `team-${team} state-win`;
+  winCheer.textContent = t("winCheer");
+  winBlue.textContent = scores.blue;
+  winGreen.textContent = scores.green;
+  winOverlay.hidden = false;
+  save();
+}
+
+newGameBtn.addEventListener("click", () => {
+  scores.blue = 0; scores.green = 0;
+  currentTeam = "blue";
+  usedIds = new Set();
+  winOverlay.hidden = true;
+  newRound();
 });
 
 passBtn.addEventListener("click", () => {
@@ -519,8 +554,6 @@ resetYes.addEventListener("click", () => {
 });
 
 // ---------- KONFIG (hidden config screen) ----------
-const LANG_NAME = { cs: "Česky", en: "English" };
-
 // secret entry: triple-tap the state tag within ~0.6s between taps
 let tapCount = 0, lastTap = 0;
 stateHint.addEventListener("click", () => {
@@ -533,6 +566,7 @@ stateHint.addEventListener("click", () => {
 function openKonfig() {
   syncLangUI();
   renderPlayCats();
+  renderWinChips();
   renderFilterTabs();
   renderTopicList();
   renderCatList();
@@ -565,7 +599,8 @@ function applyLang() {
   document.querySelectorAll("[data-i18n-ph]").forEach((el) => { el.placeholder = t(el.dataset.i18nPh); });
   syncLangUI();
   renderPrompt();
-  if (!konfigOverlay.hidden) { renderPlayCats(); renderFilterTabs(); renderTopicList(); renderCatList(); }
+  if (!konfigOverlay.hidden) { renderPlayCats(); renderWinChips(); renderFilterTabs(); renderTopicList(); renderCatList(); }
+  if (!winOverlay.hidden) { showWin(currentTeam); return; }   // keep the win screen, don't fall back to play
   setState(state);   // role tag, primary button, score chip
 }
 langBtns.cs.addEventListener("click", () => setLang("cs"));
@@ -619,6 +654,17 @@ function renderPlayCats() {
   });
 }
 
+// play to a target score, or free play (0)
+const WIN_OPTIONS = [0, 10, 12, 15, 20, 25];
+function renderWinChips() {
+  const items = WIN_OPTIONS.map((n) => ({ key: String(n), label: n === 0 ? t("freePlay") : String(n) }));
+  renderChips(winChips, items, String(winTarget), (key) => {
+    winTarget = Number(key);
+    saveSettings();
+    renderWinChips();
+  });
+}
+
 function renderTopicList() {
   topicCount.textContent = String(topics.length);
   const shown = topics.filter((p) => filterCat === "all" || p.cat === filterCat);
@@ -629,7 +675,7 @@ function renderTopicList() {
   topicList.innerHTML = shown.map((p) => {
     const pair = isPair(p[lang]) ? p[lang] : (p.cs || p.en);
     const tag = filterCat === "all" ? `<span class="cat-tag">${escapeHtml(catName(p.cat))}</span>` : "";
-    return `<li><button class="topic-row" data-id="${p.id}">`
+    return `<li><button class="topic-row" data-id="${escapeHtml(p.id)}">`
       + `<span>${escapeHtml(pair[0])} → ${escapeHtml(pair[1])}</span>${tag}</button></li>`;
   }).join("");
 }
