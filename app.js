@@ -190,6 +190,22 @@ const delCatNo = document.getElementById("delCatNo");
 const discardOverlay = document.getElementById("discardOverlay");
 const discardYes = document.getElementById("discardYes");
 const discardNo = document.getElementById("discardNo");
+const exportBtn = document.getElementById("exportBtn");
+const importBtn = document.getElementById("importBtn");
+const exportOverlay = document.getElementById("exportOverlay");
+const exportClose = document.getElementById("exportClose");
+const exportArea = document.getElementById("exportArea");
+const copyBtn = document.getElementById("copyBtn");
+const shareBtn = document.getElementById("shareBtn");
+const copyOk = document.getElementById("copyOk");
+const importOverlay = document.getElementById("importOverlay");
+const importClose = document.getElementById("importClose");
+const importArea = document.getElementById("importArea");
+const importError = document.getElementById("importError");
+const doImportBtn = document.getElementById("doImportBtn");
+const importConfirmOverlay = document.getElementById("importConfirmOverlay");
+const importConfirmYes = document.getElementById("importConfirmYes");
+const importConfirmNo = document.getElementById("importConfirmNo");
 
 // ---------- state ----------
 let state = "psychic";        // psychic | guess | reveal
@@ -297,6 +313,11 @@ const UI = {
     editCatTitle: "Upravit kategorii", deleteCat: "Smazat kategorii",
     deleteCatTitle: "Smazat<br>kategorii?", deleteCatNote: "Témata se přesunou do Jiné.",
     catNamePh: "Název", errCatName: "Vyplň název.",
+    backup: "Záloha", restore: "Obnovit", exportBtn: "Zálohovat",
+    exportHint: "Zkopíruj a ulož si tento text (např. do Poznámek).",
+    copyBtn: "Kopírovat", shareBtn: "Sdílet", copiedMsg: "Zkopírováno!",
+    importHint: "Vlož sem text zálohy.", restoreTitle: "Obnovit ze<br>zálohy?",
+    restoreYes: "Ano, obnovit", importErr: "Neplatná záloha.",
   },
   en: {
     done: "Done", language: "Language", addTopic: "Add topic", optional: "(optional)",
@@ -321,6 +342,11 @@ const UI = {
     editCatTitle: "Edit category", deleteCat: "Delete category",
     deleteCatTitle: "Delete<br>category?", deleteCatNote: "Its topics move to Other.",
     catNamePh: "Name", errCatName: "Enter a name.",
+    backup: "Backup", restore: "Restore", exportBtn: "Back up",
+    exportHint: "Copy and save this text (e.g. to Notes).",
+    copyBtn: "Copy", shareBtn: "Share", copiedMsg: "Copied!",
+    importHint: "Paste your backup text here.", restoreTitle: "Restore from<br>backup?",
+    restoreYes: "Yes, restore", importErr: "Invalid backup.",
   },
 };
 function t(key) { return (UI[lang] && UI[lang][key]) || UI.cs[key] || key; }
@@ -760,6 +786,67 @@ delCatYes.addEventListener("click", () => {
   delCatOverlay.hidden = true;
   catEditOverlay.hidden = true;
   renderCatList(); renderPlayCats(); renderFilterTabs(); renderTopicList();
+});
+
+// ---------- backup / restore ----------
+function exportData() {
+  return JSON.stringify({ app: "prihoriva", v: 1, topics, cats, deletedSeeds });
+}
+function parseImport(text) {
+  let d;
+  try { d = JSON.parse(text); } catch { return null; }
+  if (!d || d.app !== "prihoriva" || !Array.isArray(d.topics)) return null;
+  if (!d.topics.filter(validTopic).length) return null;
+  return d;
+}
+function applyImport(d) {
+  topics = d.topics.filter(validTopic).map((p) => ({ id: p.id, cs: p.cs, en: p.en, cat: p.cat || "jine" }));
+  cats = Array.isArray(d.cats) ? d.cats.filter(validCat).map((c) => ({ key: c.key, cs: c.cs, en: c.en })) : [];
+  if (!cats.some((c) => c.key === "jine")) cats.push({ key: "jine", cs: "Jiné", en: "Other" });
+  deletedSeeds = Array.isArray(d.deletedSeeds) ? d.deletedSeeds.filter((x) => typeof x === "string") : [];
+  usedIds = new Set(); filterCat = "all"; playCat = "all";
+  saveTopics(); saveCats(); saveSettings();
+  drawPrompt(); renderPrompt();
+}
+
+exportBtn.addEventListener("click", () => {
+  exportArea.value = exportData();
+  copyOk.hidden = true;
+  shareBtn.hidden = !navigator.share;
+  exportOverlay.hidden = false;
+});
+exportClose.addEventListener("click", () => { exportOverlay.hidden = true; });
+copyBtn.addEventListener("click", async () => {
+  const text = exportArea.value;
+  try {
+    await navigator.clipboard.writeText(text);
+  } catch {
+    exportArea.focus(); exportArea.select();
+    try { document.execCommand("copy"); } catch { /* ignore */ }
+  }
+  copyOk.hidden = false;
+});
+shareBtn.addEventListener("click", () => {
+  if (navigator.share) navigator.share({ title: "Přihořívá", text: exportArea.value }).catch(() => {});
+});
+
+let pendingImport = null;
+importBtn.addEventListener("click", () => {
+  importArea.value = ""; importError.hidden = true; importOverlay.hidden = false;
+});
+importClose.addEventListener("click", () => { importOverlay.hidden = true; });
+doImportBtn.addEventListener("click", () => {
+  const d = parseImport(importArea.value.trim());
+  if (!d) { importError.textContent = t("importErr"); importError.hidden = false; return; }
+  pendingImport = d;
+  importConfirmOverlay.hidden = false;
+});
+importConfirmNo.addEventListener("click", () => { importConfirmOverlay.hidden = true; });
+importConfirmYes.addEventListener("click", () => {
+  if (pendingImport) applyImport(pendingImport);
+  importConfirmOverlay.hidden = true;
+  importOverlay.hidden = true;
+  renderPlayCats(); renderFilterTabs(); renderTopicList(); renderCatList();
 });
 
 // ---------- boot ----------

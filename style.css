@@ -536,11 +536,34 @@ body.team-green .prompt-side { background: var(--green-deep); }
 .topic-row .cat-tag { flex: none; font-size: 10px; font-weight: 900; opacity: 0.45; text-transform: uppercase; letter-spacing: 0.03em; }
 .user-empty { font-weight: 700; opacity: 0.5; font-size: 14px; padding: 4px 2px; }
 
-/* edit + delete overlays stack above KONFIG; discard confirm sits above those */
-#editOverlay, #catEditOverlay { z-index: 30; }
-#delOverlay, #delCatOverlay { z-index: 40; }
+/* edit + delete overlays stack above KONFIG; confirms sit above those */
+#editOverlay, #catEditOverlay, #exportOverlay, #importOverlay { z-index: 30; }
+#delOverlay, #delCatOverlay, #importConfirmOverlay { z-index: 40; }
 #discardOverlay { z-index: 50; }
 #editDeleteSec, #catDeleteSec { background: none; border: none; box-shadow: none; padding: 0; }
+
+/* backup / restore */
+.stack2 { display: flex; flex-direction: column; gap: 10px; }
+.stack2 .btn { width: 100%; }
+.konfig-hint { margin: -2px 0 12px; font-size: 12px; font-weight: 700; opacity: 0.65; line-height: 1.4; }
+.konfig-area {
+  width: 100%;
+  min-height: 120px;
+  max-height: 240px;
+  margin-bottom: 12px;
+  border: 3px solid var(--ink);
+  border-radius: 0;
+  padding: 10px;
+  font-family: ui-monospace, Menlo, monospace;
+  font-size: 12px;
+  line-height: 1.4;
+  background: var(--paper);
+  color: var(--ink);
+  resize: vertical;
+  -webkit-user-select: text;
+  user-select: text;
+}
+.ok-msg { margin: 10px 0 0; color: var(--green-deep); font-weight: 900; font-size: 14px; }
 
 /* danger + wipe confirm */
 .btn.danger { background: var(--red); color: var(--paper); }

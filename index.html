@@ -184,6 +184,14 @@
       </section>
 
       <section class="konfig-sec">
+        <h3 data-i18n="backup">Záloha</h3>
+        <div class="stack2">
+          <button class="btn" id="exportBtn" data-i18n="exportBtn">Zálohovat</button>
+          <button class="btn" id="importBtn" data-i18n="restore">Obnovit</button>
+        </div>
+      </section>
+
+      <section class="konfig-sec">
         <h3 data-i18n="score">Skóre</h3>
         <button class="btn danger" id="wipeBtn" data-i18n="resetScore">Vynulovat skóre</button>
       </section>
@@ -263,6 +271,52 @@
       <div class="overlay-btns">
         <button class="btn light" id="delCatYes" data-i18n="deleteYes">Ano, smazat</button>
         <button class="link-btn" id="delCatNo" data-i18n="cancel">Zrušit</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- export (backup) -->
+  <div class="konfig-overlay" id="exportOverlay" hidden>
+    <div class="konfig-panel">
+      <header class="konfig-head">
+        <h2 data-i18n="backup">Záloha</h2>
+        <button class="btn ghost" id="exportClose" data-i18n="done">Hotovo</button>
+      </header>
+      <section class="konfig-sec">
+        <p class="konfig-hint" data-i18n="exportHint">Zkopíruj a ulož si tento text (např. do Poznámek).</p>
+        <textarea class="konfig-area" id="exportArea" readonly></textarea>
+        <div class="stack2">
+          <button class="btn" id="copyBtn" data-i18n="copyBtn">Kopírovat</button>
+          <button class="btn" id="shareBtn" data-i18n="shareBtn" hidden>Sdílet</button>
+        </div>
+        <p class="ok-msg" id="copyOk" data-i18n="copiedMsg" hidden>Zkopírováno!</p>
+      </section>
+    </div>
+  </div>
+
+  <!-- import (restore) -->
+  <div class="konfig-overlay" id="importOverlay" hidden>
+    <div class="konfig-panel">
+      <header class="konfig-head">
+        <h2 data-i18n="restore">Obnovit</h2>
+        <button class="btn ghost" id="importClose" data-i18n="cancel">Zrušit</button>
+      </header>
+      <section class="konfig-sec">
+        <p class="konfig-hint" data-i18n="importHint">Vlož sem text zálohy.</p>
+        <textarea class="konfig-area" id="importArea"></textarea>
+        <p class="add-error" id="importError" hidden></p>
+        <button class="btn danger" id="doImportBtn" data-i18n="restore">Obnovit</button>
+      </section>
+    </div>
+  </div>
+
+  <!-- restore confirm -->
+  <div class="pass-overlay" id="importConfirmOverlay" hidden>
+    <div class="pass-inner">
+      <h2 data-i18n-html="restoreTitle">Obnovit ze<br>zálohy?</h2>
+      <div class="overlay-btns">
+        <button class="btn light" id="importConfirmYes" data-i18n="restoreYes">Ano, obnovit</button>
+        <button class="link-btn" id="importConfirmNo" data-i18n="cancel">Zrušit</button>
       </div>
     </div>
   </div>
