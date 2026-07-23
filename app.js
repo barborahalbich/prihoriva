@@ -23,6 +23,7 @@ const TOPICS_KEY = "prihoriva.topics.v1";
 const DELSEED_KEY = "prihoriva.deletedSeeds.v1";
 
 let lang = "cs";                 // active language: "cs" | "en"
+let playCat = "all";             // which category is in play ("all" = shuffle everything)
 let topics = [];                 // every topic, on-device & editable: [{ id, cs?, en?, cat }]
 let deletedSeeds = [];           // seed ids the player removed (so they don't return on merge)
 let current = null;              // the topic in play
@@ -35,10 +36,11 @@ function loadSettings() {
   try {
     const s = JSON.parse(localStorage.getItem(SETTINGS_KEY));
     if (s && (s.lang === "cs" || s.lang === "en")) lang = s.lang;
+    if (s && typeof s.playCat === "string") playCat = s.playCat;
   } catch { /* ignore */ }
 }
 function saveSettings() {
-  try { localStorage.setItem(SETTINGS_KEY, JSON.stringify({ lang })); } catch { /* ignore */ }
+  try { localStorage.setItem(SETTINGS_KEY, JSON.stringify({ lang, playCat })); } catch { /* ignore */ }
 }
 
 function saveTopics() {
@@ -73,9 +75,13 @@ function loadTopics() {
   saveTopics();
 }
 
-// the active pool: every topic carrying a label pair in the current language
+// the active pool: topics with a label pair in the current language, in the chosen
+// category (falls back to everything if that category has nothing to draw)
 function pool() {
-  return topics.filter((p) => isPair(p[lang]));
+  const byLang = topics.filter((p) => isPair(p[lang]));
+  if (playCat === "all") return byLang;
+  const byCat = byLang.filter((p) => p.cat === playCat);
+  return byCat.length ? byCat : byLang;
 }
 
 function drawPrompt() {
@@ -131,6 +137,7 @@ const konfigOverlay = document.getElementById("konfigOverlay");
 const konfigClose = document.getElementById("konfigClose");
 const langBtns = { cs: document.getElementById("langCs"), en: document.getElementById("langEn") };
 const wipeBtn = document.getElementById("wipeBtn");
+const playCats = document.getElementById("playCats");
 const newTopicBtn = document.getElementById("newTopicBtn");
 const filterTabs = document.getElementById("filterTabs");
 const topicList = document.getElementById("topicList");
@@ -247,6 +254,7 @@ const UI = {
     pass_phone: "Předej<br>telefon", pass_cover: "Zakryj<br>displej",
     btn_guess: "Hádat", btn_clue: "Napovídat",
     band_0: "Zima", band_2: "Přihořívá", band_3: "Teplo", band_5: "Hoří",
+    konfig: "KONFIG", play: "Co hrát", shuffle: "Zamíchat",
     topics: "Témata", newTopic: "Nové téma", editTopic: "Upravit téma", allCats: "Vše",
     category: "Kategorie", save: "Uložit", deleteTopic: "Smazat téma",
     deleteTitle: "Smazat<br>téma?", deleteYes: "Ano, smazat",
@@ -265,6 +273,7 @@ const UI = {
     pass_phone: "Pass the<br>phone", pass_cover: "Hide the<br>screen",
     btn_guess: "Ready to guess", btn_clue: "Give a new clue",
     band_0: "Cold", band_2: "Warmer", band_3: "Hot", band_5: "On fire",
+    konfig: "CONFIG", play: "What to play", shuffle: "Shuffle",
     topics: "Topics", newTopic: "New topic", editTopic: "Edit topic", allCats: "All",
     category: "Category", save: "Save", deleteTopic: "Delete topic",
     deleteTitle: "Delete<br>topic?", deleteYes: "Yes, delete",
@@ -454,6 +463,7 @@ stateHint.addEventListener("click", () => {
 
 function openKonfig() {
   syncLangUI();
+  renderPlayCats();
   renderFilterTabs();
   renderTopicList();
   konfigOverlay.hidden = false;
@@ -485,7 +495,7 @@ function applyLang() {
   document.querySelectorAll("[data-i18n-ph]").forEach((el) => { el.placeholder = t(el.dataset.i18nPh); });
   syncLangUI();
   renderPrompt();
-  if (!konfigOverlay.hidden) { renderFilterTabs(); renderTopicList(); }
+  if (!konfigOverlay.hidden) { renderPlayCats(); renderFilterTabs(); renderTopicList(); }
   setState(state);   // role tag, primary button, score chip
 }
 langBtns.cs.addEventListener("click", () => setLang("cs"));
@@ -528,6 +538,18 @@ function renderFilterTabs() {
   renderChips(filterTabs, items, filterCat, (key) => { filterCat = key; renderFilterTabs(); renderTopicList(); });
 }
 
+// what to play: "Zamíchat" (shuffle everything) or a single category
+function renderPlayCats() {
+  const items = [{ key: "all", label: t("shuffle") }].concat(CATEGORIES.map((c) => ({ key: c.key, label: c[lang] })));
+  renderChips(playCats, items, playCat, (key) => {
+    playCat = key;
+    saveSettings();
+    renderPlayCats();
+    usedIds = new Set();                                    // fresh no-repeat cycle for the new selection
+    if (playCat !== "all" && (!current || current.cat !== playCat)) { drawPrompt(); renderPrompt(); }
+  });
+}
+
 function renderTopicList() {
   topicCount.textContent = String(topics.length);
   const shown = topics.filter((p) => filterCat === "all" || p.cat === filterCat);
@@ -554,7 +576,8 @@ function openEdit(topic) {
   editingId = topic ? topic.id : null;
   const isNew = !topic;
   editTitle.textContent = isNew ? t("newTopic") : t("editTopic");
-  editCat = topic ? (topic.cat || "jine") : "jine";
+  // a new topic inherits the category the manager is currently filtered to
+  editCat = topic ? (topic.cat || "jine") : (filterCat !== "all" ? filterCat : "jine");
   editCsL.value = topic && topic.cs ? topic.cs[0] : "";
   editCsR.value = topic && topic.cs ? topic.cs[1] : "";
   editEnL.value = topic && topic.en ? topic.en[0] : "";
