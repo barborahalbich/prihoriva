@@ -178,7 +178,7 @@
       <section class="konfig-sec">
         <div class="topics-head">
           <h3 data-i18n="categories">Kategorie</h3>
-          <button class="btn small" id="newCatBtn" data-i18n="newCatShort">Nová</button>
+          <button class="btn small" id="newCatBtn" data-i18n="newCat">Nová kategorie</button>
         </div>
         <ul class="topic-list" id="catList"></ul>
       </section>
@@ -260,10 +260,20 @@
   <div class="pass-overlay" id="delCatOverlay" hidden>
     <div class="pass-inner">
       <h2 data-i18n-html="deleteCatTitle">Smazat<br>kategorii?</h2>
-      <p class="del-note" data-i18n="deleteCatNote">Témata se přesunou do Jiné.</p>
       <div class="overlay-btns">
         <button class="btn light" id="delCatYes" data-i18n="deleteYes">Ano, smazat</button>
         <button class="link-btn" id="delCatNo" data-i18n="cancel">Zrušit</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- discard-changes confirm (shown when cancelling an edit with unsaved changes) -->
+  <div class="pass-overlay" id="discardOverlay" hidden>
+    <div class="pass-inner">
+      <h2 data-i18n-html="discardTitle">Zahodit<br>změny?</h2>
+      <div class="overlay-btns">
+        <button class="btn light" id="discardYes" data-i18n="discardYes">Ano, zahodit</button>
+        <button class="link-btn" id="discardNo" data-i18n="cancel">Zrušit</button>
       </div>
     </div>
   </div>

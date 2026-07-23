@@ -187,6 +187,9 @@ const catDeleteSec = document.getElementById("catDeleteSec");
 const delCatOverlay = document.getElementById("delCatOverlay");
 const delCatYes = document.getElementById("delCatYes");
 const delCatNo = document.getElementById("delCatNo");
+const discardOverlay = document.getElementById("discardOverlay");
+const discardYes = document.getElementById("discardYes");
+const discardNo = document.getElementById("discardNo");
 
 // ---------- state ----------
 let state = "psychic";        // psychic | guess | reveal
@@ -284,7 +287,8 @@ const UI = {
     pass_phone: "Předej<br>telefon", pass_cover: "Zakryj<br>displej",
     btn_guess: "Hádat", btn_clue: "Napovídat",
     band_0: "Zima", band_2: "Přihořívá", band_3: "Teplo", band_5: "Hoří",
-    konfig: "KONFIG", play: "Co hrát", shuffle: "Zamíchat",
+    konfig: "KONFIG", play: "Hra", shuffle: "Zamíchat",
+    discardTitle: "Zahodit<br>změny?", discardYes: "Ano, zahodit",
     topics: "Témata", newTopic: "Nové téma", editTopic: "Upravit téma", allCats: "Vše",
     category: "Kategorie", save: "Uložit", deleteTopic: "Smazat téma",
     deleteTitle: "Smazat<br>téma?", deleteYes: "Ano, smazat",
@@ -307,7 +311,8 @@ const UI = {
     pass_phone: "Pass the<br>phone", pass_cover: "Hide the<br>screen",
     btn_guess: "Ready to guess", btn_clue: "Give a new clue",
     band_0: "Cold", band_2: "Warmer", band_3: "Hot", band_5: "On fire",
-    konfig: "CONFIG", play: "What to play", shuffle: "Shuffle",
+    konfig: "CONFIG", play: "Game", shuffle: "Shuffle",
+    discardTitle: "Discard<br>changes?", discardYes: "Yes, discard",
     topics: "Topics", newTopic: "New topic", editTopic: "Edit topic", allCats: "All",
     category: "Category", save: "Save", deleteTopic: "Delete topic",
     deleteTitle: "Delete<br>topic?", deleteYes: "Yes, delete",
@@ -555,6 +560,9 @@ let filterCat = "all";              // which category the manager list shows
 let editingId = null;               // topic being edited (null = new)
 let editCat = "jine";               // category selected in the edit overlay
 let pendingDelId = null;            // topic queued for deletion
+let editSnap = {};                  // snapshot of the edit form, to detect unsaved changes
+let catSnap = {};
+let discardTarget = null;           // which edit overlay a discard-confirm would close
 
 // generic chip row: [{key,label}], highlight active, call onPick(key)
 function renderChips(container, items, activeKey, onPick) {
@@ -620,7 +628,12 @@ function openEdit(topic) {
   editError.hidden = true;
   editDeleteSec.hidden = isNew;
   renderEditCats();
+  editSnap = { csL: editCsL.value, csR: editCsR.value, enL: editEnL.value, enR: editEnR.value, cat: editCat };
   editOverlay.hidden = false;
+}
+function topicDirty() {
+  return editCsL.value !== editSnap.csL || editCsR.value !== editSnap.csR
+    || editEnL.value !== editSnap.enL || editEnR.value !== editSnap.enR || editCat !== editSnap.cat;
 }
 function renderEditCats() {
   renderChips(editCats, catItems(), editCat, (key) => {
@@ -628,7 +641,10 @@ function renderEditCats() {
     renderEditCats();
   });
 }
-editClose.addEventListener("click", () => { editOverlay.hidden = true; });
+editClose.addEventListener("click", () => {
+  if (topicDirty()) { discardTarget = "topic"; discardOverlay.hidden = false; }
+  else editOverlay.hidden = true;
+});
 
 function showEditError(msg) { editError.textContent = msg; editError.hidden = false; }
 
@@ -699,9 +715,22 @@ function openCatEdit(cat) {
   catEn.value = cat ? (cat.en || "") : "";
   catError.hidden = true;
   catDeleteSec.hidden = isNew || cat.key === "jine";   // "Jiné" is the protected fallback
+  catSnap = { cs: catCs.value, en: catEn.value };
   catEditOverlay.hidden = false;
 }
-catEditClose.addEventListener("click", () => { catEditOverlay.hidden = true; });
+function catDirty() { return catCs.value !== catSnap.cs || catEn.value !== catSnap.en; }
+catEditClose.addEventListener("click", () => {
+  if (catDirty()) { discardTarget = "cat"; discardOverlay.hidden = false; }
+  else catEditOverlay.hidden = true;
+});
+
+// discard-changes confirm, shared by the topic and category editors
+discardNo.addEventListener("click", () => { discardOverlay.hidden = true; });
+discardYes.addEventListener("click", () => {
+  discardOverlay.hidden = true;
+  if (discardTarget === "topic") editOverlay.hidden = true;
+  else if (discardTarget === "cat") catEditOverlay.hidden = true;
+});
 
 catSave.addEventListener("click", () => {
   const cs = catCs.value.trim(), en = catEn.value.trim();

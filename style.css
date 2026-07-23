@@ -432,6 +432,7 @@ body.team-green .prompt-side { background: var(--green-deep); }
   margin: 0;
   font-size: 40px;
   font-weight: 900;
+  text-transform: uppercase;
   letter-spacing: -0.02em;
   color: var(--paper);
   text-shadow: 4px 4px 0 var(--red);
@@ -535,11 +536,11 @@ body.team-green .prompt-side { background: var(--green-deep); }
 .topic-row .cat-tag { flex: none; font-size: 10px; font-weight: 900; opacity: 0.45; text-transform: uppercase; letter-spacing: 0.03em; }
 .user-empty { font-weight: 700; opacity: 0.5; font-size: 14px; padding: 4px 2px; }
 
-/* edit + delete overlays stack above KONFIG */
+/* edit + delete overlays stack above KONFIG; discard confirm sits above those */
 #editOverlay, #catEditOverlay { z-index: 30; }
 #delOverlay, #delCatOverlay { z-index: 40; }
+#discardOverlay { z-index: 50; }
 #editDeleteSec, #catDeleteSec { background: none; border: none; box-shadow: none; padding: 0; }
-.del-note { margin: -24px 0 32px; color: var(--paper); font-weight: 700; font-size: 15px; opacity: 0.85; }
 
 /* danger + wipe confirm */
 .btn.danger { background: var(--red); color: var(--paper); }
