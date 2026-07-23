@@ -443,6 +443,7 @@ body.team-green .prompt-side { background: var(--green-deep); }
   border: 3px solid var(--ink);
   box-shadow: var(--shadow);
   padding: 16px;
+  color: var(--ink);   /* never inherit --screen-ink; it's white on the Hoří reveal */
 }
 .konfig-sec h3 {
   margin: 0 0 12px;
@@ -452,7 +453,6 @@ body.team-green .prompt-side { background: var(--green-deep); }
   letter-spacing: 0.04em;
 }
 .konfig-sec > .btn { width: 100%; }
-.konfig-hint { margin: -6px 0 12px; font-size: 12px; font-weight: 700; opacity: 0.6; }
 
 /* language segmented control */
 .seg { display: flex; gap: 10px; }
@@ -534,7 +534,7 @@ body.team-green .prompt-side { background: var(--green-deep); }
   cursor: pointer;
 }
 .topic-row .cat-tag { flex: none; font-size: 10px; font-weight: 900; opacity: 0.45; text-transform: uppercase; letter-spacing: 0.03em; }
-.user-empty { font-weight: 700; opacity: 0.5; font-size: 14px; padding: 4px 2px; }
+.user-empty { font-weight: 700; font-size: 14px; padding: 4px 2px; color: var(--ink); }
 
 /* edit + delete overlays stack above KONFIG; confirms sit above those */
 #editOverlay, #catEditOverlay, #exportOverlay, #importOverlay { z-index: 30; }
@@ -545,7 +545,7 @@ body.team-green .prompt-side { background: var(--green-deep); }
 /* backup / restore */
 .stack2 { display: flex; flex-direction: column; gap: 10px; }
 .stack2 .btn { width: 100%; }
-.konfig-hint { margin: -2px 0 12px; font-size: 12px; font-weight: 700; opacity: 0.65; line-height: 1.4; }
+.konfig-hint { margin: -2px 0 12px; font-size: 12px; font-weight: 700; line-height: 1.4; color: var(--ink); }
 .konfig-area {
   width: 100%;
   min-height: 120px;
