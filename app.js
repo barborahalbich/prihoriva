@@ -21,11 +21,13 @@ function slicePath(t1, t2, r = R) {
 const SETTINGS_KEY = "prihoriva.settings.v1";
 const TOPICS_KEY = "prihoriva.topics.v1";
 const DELSEED_KEY = "prihoriva.deletedSeeds.v1";
+const CATS_KEY = "prihoriva.cats.v1";
 
 let lang = "cs";                 // active language: "cs" | "en"
 let playCat = "all";             // which category is in play ("all" = shuffle everything)
 let topics = [];                 // every topic, on-device & editable: [{ id, cs?, en?, cat }]
 let deletedSeeds = [];           // seed ids the player removed (so they don't return on merge)
+let cats = [];                   // categories, on-device & editable: [{ key, cs, en }]
 let current = null;              // the topic in play
 let usedIds = new Set();         // topics drawn this cycle (no-repeat until the pool empties)
 
@@ -49,6 +51,20 @@ function saveTopics() {
     localStorage.setItem(DELSEED_KEY, JSON.stringify(deletedSeeds));
   } catch { /* ignore */ }
 }
+
+function validCat(c) { return c && c.key && (c.cs || c.en); }
+function saveCats() {
+  try { localStorage.setItem(CATS_KEY, JSON.stringify(cats)); } catch { /* ignore */ }
+}
+function loadCats() {
+  try { const c = JSON.parse(localStorage.getItem(CATS_KEY)); if (Array.isArray(c) && c.length) cats = c.filter(validCat); } catch { /* ignore */ }
+  if (!cats.length) cats = CATEGORIES.map((c) => ({ key: c.key, cs: c.cs, en: c.en }));
+  if (!cats.some((c) => c.key === "jine")) cats.push({ key: "jine", cs: "Jiné", en: "Other" });  // permanent fallback
+  saveCats();
+}
+function catLabelOf(c) { return c[lang] || c.cs || c.en || c.key; }
+function catName(key) { const c = cats.find((x) => x.key === key); return c ? catLabelOf(c) : key; }
+function catItems() { return cats.map((c) => ({ key: c.key, label: catLabelOf(c) })); }
 
 // on-device topic store: the shipped deck is copied in on first run, then it's
 // fully owned & editable here. New seed topics from later deploys merge in,
@@ -157,6 +173,20 @@ const editDeleteSec = document.getElementById("editDeleteSec");
 const delOverlay = document.getElementById("delOverlay");
 const delYes = document.getElementById("delYes");
 const delNo = document.getElementById("delNo");
+const newCatBtn = document.getElementById("newCatBtn");
+const catList = document.getElementById("catList");
+const catEditOverlay = document.getElementById("catEditOverlay");
+const catEditTitle = document.getElementById("catEditTitle");
+const catEditClose = document.getElementById("catEditClose");
+const catCs = document.getElementById("catCs");
+const catEn = document.getElementById("catEn");
+const catError = document.getElementById("catError");
+const catSave = document.getElementById("catSave");
+const catDelete = document.getElementById("catDelete");
+const catDeleteSec = document.getElementById("catDeleteSec");
+const delCatOverlay = document.getElementById("delCatOverlay");
+const delCatYes = document.getElementById("delCatYes");
+const delCatNo = document.getElementById("delCatNo");
 
 // ---------- state ----------
 let state = "psychic";        // psychic | guess | reveal
@@ -259,6 +289,10 @@ const UI = {
     category: "Kategorie", save: "Uložit", deleteTopic: "Smazat téma",
     deleteTitle: "Smazat<br>téma?", deleteYes: "Ano, smazat",
     errPair: "Vyplň oba konce, nebo žádný.", errNeedOne: "Vyplň aspoň jeden jazyk.",
+    categories: "Kategorie", newCat: "Nová kategorie", newCatShort: "Nová",
+    editCatTitle: "Upravit kategorii", deleteCat: "Smazat kategorii",
+    deleteCatTitle: "Smazat<br>kategorii?", deleteCatNote: "Témata se přesunou do Jiné.",
+    catNamePh: "Název", errCatName: "Vyplň název.",
   },
   en: {
     done: "Done", language: "Language", addTopic: "Add topic", optional: "(optional)",
@@ -278,6 +312,10 @@ const UI = {
     category: "Category", save: "Save", deleteTopic: "Delete topic",
     deleteTitle: "Delete<br>topic?", deleteYes: "Yes, delete",
     errPair: "Fill in both ends, or neither.", errNeedOne: "Fill in at least one language.",
+    categories: "Categories", newCat: "New category", newCatShort: "New",
+    editCatTitle: "Edit category", deleteCat: "Delete category",
+    deleteCatTitle: "Delete<br>category?", deleteCatNote: "Its topics move to Other.",
+    catNamePh: "Name", errCatName: "Enter a name.",
   },
 };
 function t(key) { return (UI[lang] && UI[lang][key]) || UI.cs[key] || key; }
@@ -466,6 +504,7 @@ function openKonfig() {
   renderPlayCats();
   renderFilterTabs();
   renderTopicList();
+  renderCatList();
   konfigOverlay.hidden = false;
 }
 function closeKonfig() {
@@ -495,7 +534,7 @@ function applyLang() {
   document.querySelectorAll("[data-i18n-ph]").forEach((el) => { el.placeholder = t(el.dataset.i18nPh); });
   syncLangUI();
   renderPrompt();
-  if (!konfigOverlay.hidden) { renderPlayCats(); renderFilterTabs(); renderTopicList(); }
+  if (!konfigOverlay.hidden) { renderPlayCats(); renderFilterTabs(); renderTopicList(); renderCatList(); }
   setState(state);   // role tag, primary button, score chip
 }
 langBtns.cs.addEventListener("click", () => setLang("cs"));
@@ -510,10 +549,6 @@ wipeBtn.addEventListener("click", () => {
 // ---------- topic manager ----------
 function escapeHtml(s) {
   return s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
-}
-function catName(key) {
-  const c = CATEGORIES.find((x) => x.key === key);
-  return c ? c[lang] : key;
 }
 
 let filterCat = "all";              // which category the manager list shows
@@ -534,13 +569,13 @@ function renderChips(container, items, activeKey, onPick) {
 }
 
 function renderFilterTabs() {
-  const items = [{ key: "all", label: t("allCats") }].concat(CATEGORIES.map((c) => ({ key: c.key, label: c[lang] })));
+  const items = [{ key: "all", label: t("allCats") }].concat(catItems());
   renderChips(filterTabs, items, filterCat, (key) => { filterCat = key; renderFilterTabs(); renderTopicList(); });
 }
 
 // what to play: "Zamíchat" (shuffle everything) or a single category
 function renderPlayCats() {
-  const items = [{ key: "all", label: t("shuffle") }].concat(CATEGORIES.map((c) => ({ key: c.key, label: c[lang] })));
+  const items = [{ key: "all", label: t("shuffle") }].concat(catItems());
   renderChips(playCats, items, playCat, (key) => {
     playCat = key;
     saveSettings();
@@ -588,7 +623,7 @@ function openEdit(topic) {
   editOverlay.hidden = false;
 }
 function renderEditCats() {
-  renderChips(editCats, CATEGORIES.map((c) => ({ key: c.key, label: c[lang] })), editCat, (key) => {
+  renderChips(editCats, catItems(), editCat, (key) => {
     editCat = key;
     renderEditCats();
   });
@@ -638,8 +673,69 @@ delYes.addEventListener("click", () => {
   renderTopicList();
 });
 
+// ---------- category manager ----------
+let editingCatKey = null;
+let pendingDelCat = null;
+
+function renderCatList() {
+  catList.innerHTML = cats.map((c) => {
+    const count = topics.filter((tp) => tp.cat === c.key).length;
+    return `<li><button class="topic-row" data-key="${escapeHtml(c.key)}">`
+      + `<span>${escapeHtml(catLabelOf(c))}</span><span class="cat-tag">${count}</span></button></li>`;
+  }).join("");
+}
+catList.addEventListener("click", (e) => {
+  const row = e.target.closest(".topic-row");
+  if (!row) return;
+  openCatEdit(cats.find((c) => c.key === row.getAttribute("data-key")) || null);
+});
+newCatBtn.addEventListener("click", () => openCatEdit(null));
+
+function openCatEdit(cat) {
+  editingCatKey = cat ? cat.key : null;
+  const isNew = !cat;
+  catEditTitle.textContent = isNew ? t("newCat") : t("editCatTitle");
+  catCs.value = cat ? (cat.cs || "") : "";
+  catEn.value = cat ? (cat.en || "") : "";
+  catError.hidden = true;
+  catDeleteSec.hidden = isNew || cat.key === "jine";   // "Jiné" is the protected fallback
+  catEditOverlay.hidden = false;
+}
+catEditClose.addEventListener("click", () => { catEditOverlay.hidden = true; });
+
+catSave.addEventListener("click", () => {
+  const cs = catCs.value.trim(), en = catEn.value.trim();
+  if (!cs && !en) { catError.textContent = t("errCatName"); catError.hidden = false; return; }
+  const cat = editingCatKey ? cats.find((c) => c.key === editingCatKey) : null;
+  if (cat) {
+    cat.cs = cs || en; cat.en = en || cs;
+  } else {
+    cats.push({ key: "c" + Date.now().toString(36) + Math.random().toString(36).slice(2, 5), cs: cs || en, en: en || cs });
+  }
+  saveCats();
+  catEditOverlay.hidden = true;
+  renderCatList(); renderPlayCats(); renderFilterTabs(); renderTopicList();
+});
+
+catDelete.addEventListener("click", () => { pendingDelCat = editingCatKey; delCatOverlay.hidden = false; });
+delCatNo.addEventListener("click", () => { delCatOverlay.hidden = true; });
+delCatYes.addEventListener("click", () => {
+  const key = pendingDelCat;
+  if (key && key !== "jine") {
+    topics.forEach((tp) => { if (tp.cat === key) tp.cat = "jine"; });   // reassign, never orphan a topic
+    cats = cats.filter((c) => c.key !== key);
+    if (playCat === key) playCat = "all";
+    if (filterCat === key) filterCat = "all";
+    saveTopics(); saveCats(); saveSettings();
+  }
+  delCatOverlay.hidden = true;
+  catEditOverlay.hidden = true;
+  renderCatList(); renderPlayCats(); renderFilterTabs(); renderTopicList();
+});
+
 // ---------- boot ----------
 loadSettings();
+loadCats();
 loadTopics();
 drawTicks();
 if (!restore()) newRound();

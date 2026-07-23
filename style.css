@@ -536,9 +536,10 @@ body.team-green .prompt-side { background: var(--green-deep); }
 .user-empty { font-weight: 700; opacity: 0.5; font-size: 14px; padding: 4px 2px; }
 
 /* edit + delete overlays stack above KONFIG */
-#editOverlay { z-index: 30; }
-#delOverlay { z-index: 40; }
-#editDeleteSec { background: none; border: none; box-shadow: none; padding: 0; }
+#editOverlay, #catEditOverlay { z-index: 30; }
+#delOverlay, #delCatOverlay { z-index: 40; }
+#editDeleteSec, #catDeleteSec { background: none; border: none; box-shadow: none; padding: 0; }
+.del-note { margin: -24px 0 32px; color: var(--paper); font-weight: 700; font-size: 15px; opacity: 0.85; }
 
 /* danger + wipe confirm */
 .btn.danger { background: var(--red); color: var(--paper); }
