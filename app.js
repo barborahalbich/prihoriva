@@ -151,6 +151,7 @@ const scoreGreen = document.getElementById("scoreGreen");
 const scorebugBtn = document.getElementById("scorebugBtn");
 const winOverlay = document.getElementById("winOverlay");
 const winCheer = document.getElementById("winCheer");
+const winStateLabel = document.getElementById("winStateLabel");
 const winBlue = document.getElementById("winBlue");
 const winGreen = document.getElementById("winGreen");
 const newGameBtn = document.getElementById("newGameBtn");
@@ -306,7 +307,8 @@ const UI = {
     phLeft: "Levá (−)", phRight: "Pravá (+)",
     noTopics: "Zatím žádná vlastní témata.", score: "Skóre", resetScore: "Vynulovat skóre",
     emptyL: "Žádná témata", emptyR: "Přidej v KONFIGu",
-    winLabel: "Hra do", freePlay: "Volná hra", winCheer: "Vítězství!", newGame: "Nová hra",
+    winLabel: "Vítězství", freePlay: "Volná hra", newGame: "Nová hra",
+    winState: "Výhra", cheerBlue: "Modrá vítězí!", cheerGreen: "Zelená vítězí!",
     peekTitle: "Ukázat<br>zadání?", peekYes: "Ano, ukázat",
     skipTitle: "Přeskočit?", skipYes: "Ano, přeskočit",
     resetTitle: "Vynulovat<br>skóre?", resetYes: "Ano, vynulovat", cancel: "Zrušit",
@@ -336,7 +338,8 @@ const UI = {
     phLeft: "Left (−)", phRight: "Right (+)",
     noTopics: "No topics yet.", score: "Score", resetScore: "Reset score",
     emptyL: "No topics", emptyR: "Add one in CONFIG",
-    winLabel: "Play to", freePlay: "Free play", winCheer: "Victory!", newGame: "New game",
+    winLabel: "Win", freePlay: "Free play", newGame: "New game",
+    winState: "Victory", cheerBlue: "Blue wins!", cheerGreen: "Green wins!",
     peekTitle: "Reveal the<br>clue?", peekYes: "Yes, reveal",
     skipTitle: "Skip the<br>prompt?", skipYes: "Yes, skip",
     resetTitle: "Reset<br>score?", resetYes: "Yes, reset", cancel: "Cancel",
@@ -498,9 +501,12 @@ primaryBtn.addEventListener("click", () => {
 function showWin(team) {
   currentTeam = team;
   document.body.className = `team-${team} state-win`;
-  winCheer.textContent = t("winCheer");
+  winStateLabel.textContent = t("winState");
+  winCheer.textContent = t(team === "blue" ? "cheerBlue" : "cheerGreen");
   winBlue.textContent = scores.blue;
   winGreen.textContent = scores.green;
+  winBlue.classList.toggle("winner", team === "blue");
+  winGreen.classList.toggle("winner", team === "green");
   winOverlay.hidden = false;
   save();
 }
@@ -655,7 +661,7 @@ function renderPlayCats() {
 }
 
 // play to a target score, or free play (0)
-const WIN_OPTIONS = [0, 10, 12, 15, 20, 25];
+const WIN_OPTIONS = [0, 5, 10, 12, 15, 20, 25];
 function renderWinChips() {
   const items = WIN_OPTIONS.map((n) => ({ key: String(n), label: n === 0 ? t("freePlay") : String(n) }));
   renderChips(winChips, items, String(winTarget), (key) => {

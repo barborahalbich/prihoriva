@@ -416,9 +416,6 @@ body.state-win .game { display: none; }   /* let the star backdrop show through 
   margin: 0 auto;
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  gap: 26px;
   padding: max(12px, env(safe-area-inset-top)) 16px max(16px, env(safe-area-inset-bottom));
 }
 .win-overlay[hidden] { display: none; }
@@ -428,13 +425,41 @@ body.state-win .game { display: none; }   /* let the star backdrop show through 
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 26px;
+  gap: 30px;
+}
+
+/* score card first (echoing the scorebug), cheer underneath — same order as the reveal */
+.win-scorecard {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  background: var(--paper);
+  border: 4px solid var(--ink);
+  box-shadow: 6px 6px 0 var(--ink);
+  padding: 14px 16px;
+}
+.win-chip {
+  min-width: 92px;
+  padding: 12px 10px;
+  display: grid;
+  place-items: center;
+  border: 4px solid var(--ink);
+  color: var(--paper);
+  font-size: 44px;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+}
+.win-chip.blue { background: var(--blue-deep); }
+.win-chip.green { background: var(--green-deep); }
+.win-chip.winner {                       /* the winning side lifts, like the active chip in play */
+  box-shadow: 7px 7px 0 var(--ink);
+  transform: translate(-3px, -3px);
 }
 
 .win-cheer {
   background: var(--ink);
   color: var(--paper);
-  font-size: min(9vw, 42px);
+  font-size: min(8.4vw, 38px);
   font-weight: 900;
   text-transform: uppercase;
   letter-spacing: 0.02em;
@@ -444,23 +469,7 @@ body.state-win .game { display: none; }   /* let the star backdrop show through 
   animation: pop 0.5s cubic-bezier(0.2, 1.6, 0.4, 1);
 }
 
-.win-score { display: flex; gap: 14px; }
-.win-chip {
-  min-width: 96px;
-  padding: 14px 10px;
-  display: grid;
-  place-items: center;
-  border: 4px solid var(--ink);
-  box-shadow: 6px 6px 0 var(--ink);
-  color: var(--paper);
-  font-size: 46px;
-  font-weight: 900;
-  font-variant-numeric: tabular-nums;
-}
-.win-chip.blue { background: var(--blue-deep); }
-.win-chip.green { background: var(--green-deep); }
-
-.win-overlay .btn { width: 100%; margin-top: auto; }
+.win-overlay .btn { width: 100%; }
 
 /* ---------- KONFIG (hidden config screen) ---------- */
 .konfig-overlay {
